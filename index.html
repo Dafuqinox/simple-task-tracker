@@ -1,44 +1,248 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Simple Task Tracker</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta name="theme-color" content="#111827" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <main class="app">
+  <main class="app" aria-label="Task tracker app">
     <header class="header">
-      <h1>Simple Task Tracker</h1>
-      <p class="sub">Click a task to toggle complete. Your list saves automatically.</p>
-    </header>
-
-    <section class="controls">
-      <div class="add-row">
-        <input id="taskInput" type="text" placeholder="Add a task (press Enter)..." autocomplete="off" />
-        <button id="addBtn">Add</button>
+      <div class="header-left">
+        <h1>Simple Task Tracker</h1>
+        <p class="sub">No sign-in. Saves to this browser. Works offline.</p>
       </div>
 
-      <div class="toolbar">
-        <div class="filters" role="tablist" aria-label="Filters">
-          <button class="filter active" data-filter="all">All</button>
-          <button class="filter" data-filter="active">Active</button>
-          <button class="filter" data-filter="completed">Completed</button>
+      <div class="header-right">
+        <button id="themeBtn" class="pill" type="button" aria-label="Toggle dark mode">🌙</button>
+        <button id="printBtn" class="pill" type="button">Print</button>
+      </div>
+    </header>
+
+    <section class="panel" aria-label="List and add task">
+      <div class="row row-wrap">
+        <div class="field">
+          <label for="listSelect">List</label>
+          <div class="inline">
+            <select id="listSelect" aria-label="Select list"></select>
+            <button id="newListBtn" class="btn" type="button">New List</button>
+            <button id="renameListBtn" class="btn" type="button">Rename</button>
+            <button id="deleteListBtn" class="btn danger" type="button">Delete</button>
+          </div>
         </div>
 
-        <div class="meta">
-          <span id="count">0 remaining</span>
-          <button id="clearCompleted" class="link">Clear completed</button>
+        <div class="field grow">
+          <label for="taskText">New task</label>
+          <div class="inline">
+            <input id="taskText" type="text" placeholder="Add a task… (Enter to add)" autocomplete="off" />
+            <button id="addTaskBtn" class="btn primary" type="button">Add</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="row row-wrap">
+        <div class="field">
+          <label for="dueInput">Due</label>
+          <input id="dueInput" type="datetime-local" />
+        </div>
+
+        <div class="field">
+          <label for="prioritySelect">Priority</label>
+          <select id="prioritySelect">
+            <option value="low">Low</option>
+            <option value="med" selected>Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+
+        <div class="field grow">
+          <label for="tagsInput">Tags</label>
+          <input id="tagsInput" type="text" placeholder="comma separated (e.g., school, bills)" />
+        </div>
+
+        <div class="field">
+          <label for="repeatSelect">Repeat</label>
+          <select id="repeatSelect">
+            <option value="none" selected>None</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="custom">Custom…</option>
+          </select>
+        </div>
+
+        <div class="field hidden" id="customRepeatWrap">
+          <label for="customRepeatDays">Every (days)</label>
+          <input id="customRepeatDays" type="number" min="1" value="7" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field grow">
+          <label for="notesInput">Notes (optional)</label>
+          <input id="notesInput" type="text" placeholder="Optional notes…" />
         </div>
       </div>
     </section>
 
-    <ul id="taskList" class="list" aria-label="Task list"></ul>
+    <section class="panel" aria-label="Filters and tools">
+      <div class="row row-wrap">
+        <div class="field grow">
+          <label for="searchInput">Search</label>
+          <input id="searchInput" type="text" placeholder="Search tasks…" />
+        </div>
+
+        <div class="field">
+          <label for="statusFilter">Status</label>
+          <select id="statusFilter">
+            <option value="all" selected>All</option>
+            <option value="active">Active</option>
+            <option value="completed">Completed</option>
+            <option value="archived">Archived</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="priorityFilter">Priority</label>
+          <select id="priorityFilter">
+            <option value="any" selected>Any</option>
+            <option value="high">High</option>
+            <option value="med">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="tagFilter">Tag</label>
+          <select id="tagFilter">
+            <option value="any" selected>Any</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="dueFilter">Due</label>
+          <select id="dueFilter">
+            <option value="any" selected>Any</option>
+            <option value="overdue">Overdue</option>
+            <option value="today">Today</option>
+            <option value="week">Next 7 days</option>
+            <option value="nodue">No due date</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="sortSelect">Sort</label>
+          <select id="sortSelect">
+            <option value="pinned_due" selected>Pinned → Due</option>
+            <option value="created_desc">Newest</option>
+            <option value="due_asc">Due soon</option>
+            <option value="priority_desc">Priority</option>
+            <option value="alpha_asc">A → Z</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row row-wrap">
+        <div class="meta">
+          <span id="countText">0 remaining</span>
+          <div class="progress" aria-label="Progress">
+            <div id="progressBar" class="progress-bar"></div>
+          </div>
+        </div>
+
+        <div class="tools">
+          <button id="clearCompletedBtn" class="btn" type="button">Clear completed</button>
+          <button id="exportJsonBtn" class="btn" type="button">Export JSON</button>
+          <label class="btn file">
+            Import JSON
+            <input id="importJsonInput" type="file" accept="application/json" />
+          </label>
+          <button id="exportCsvBtn" class="btn" type="button">Export CSV</button>
+          <button id="resetBtn" class="btn danger" type="button">Reset</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="Task list">
+      <ul id="taskList" class="list"></ul>
+      <div id="emptyState" class="empty hidden">
+        <h3>No tasks match your filters.</h3>
+        <p>Try changing filters or add a new task above.</p>
+      </div>
+    </section>
 
     <footer class="footer">
-      <small>Stored in your browser (localStorage).</small>
+      <small>Tip: Click task text to edit. Use Enter to add. Data stored only in your browser.</small>
     </footer>
   </main>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <dialog id="taskDialog" class="dialog">
+    <form method="dialog" id="taskForm">
+      <h3 id="dialogTitle">Edit Task</h3>
+
+      <label>Task</label>
+      <input id="editText" type="text" required />
+
+      <div class="grid">
+        <div>
+          <label>Due</label>
+          <input id="editDue" type="datetime-local" />
+        </div>
+        <div>
+          <label>Priority</label>
+          <select id="editPriority">
+            <option value="low">Low</option>
+            <option value="med">Medium</option>
+            <option value="high">High</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Tags</label>
+      <input id="editTags" type="text" placeholder="comma separated" />
+
+      <label>Notes</label>
+      <input id="editNotes" type="text" />
+
+      <div class="grid">
+        <div>
+          <label>Repeat</label>
+          <select id="editRepeat">
+            <option value="none">None</option>
+            <option value="daily">Daily</option>
+            <option value="weekly">Weekly</option>
+            <option value="monthly">Monthly</option>
+            <option value="custom">Custom…</option>
+          </select>
+        </div>
+        <div id="editCustomRepeatWrap" class="hidden">
+          <label>Every (days)</label>
+          <input id="editCustomRepeatDays" type="number" min="1" value="7" />
+        </div>
+      </div>
+
+      <div class="subtasks">
+        <div class="subtasks-head">
+          <strong>Subtasks</strong>
+          <div class="inline">
+            <input id="subtaskText" type="text" placeholder="Add subtask…" />
+            <button id="addSubtaskBtn" class="btn" type="button">Add</button>
+          </div>
+        </div>
+        <ul id="subtaskList" class="subtask-list"></ul>
+      </div>
+
+      <div class="dialog-actions">
+        <button class="btn" value="cancel">Cancel</button>
+        <button id="saveTaskBtn" class="btn primary" value="default">Save</button>
+      </div>
+    </form>
+  </dialog>
 
   <script src="app.js"></script>
 </body>
