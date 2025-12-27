@@ -1,0 +1,150 @@
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: #f3f4f6;
+  display: grid;
+  place-items: start center;
+  padding: 28px 12px;
+  color: #111827;
+}
+
+.app {
+  width: 100%;
+  max-width: 520px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+  padding: 18px;
+}
+
+.header h1 {
+  margin: 0 0 6px;
+  font-size: 22px;
+}
+
+.sub {
+  margin: 0 0 14px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.add-row {
+  display: flex;
+  gap: 10px;
+}
+
+input {
+  flex: 1;
+  padding: 12px 12px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  outline: none;
+}
+
+input:focus {
+  border-color: #9ca3af;
+}
+
+button {
+  border: 1px solid #d1d5db;
+  background: #111827;
+  color: white;
+  padding: 12px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+button:hover { opacity: 0.92; }
+
+.toolbar {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+}
+
+.filter {
+  background: #fff;
+  color: #111827;
+  border: 1px solid #d1d5db;
+  padding: 8px 10px;
+  border-radius: 999px;
+}
+
+.filter.active {
+  background: #111827;
+  color: #fff;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.link {
+  background: transparent;
+  color: #111827;
+  border: none;
+  padding: 8px 8px;
+  text-decoration: underline;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 14px 0 0;
+  display: grid;
+  gap: 8px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.item .text {
+  flex: 1;
+  cursor: pointer;
+}
+
+.item.completed .text {
+  text-decoration: line-through;
+  color: #6b7280;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.icon {
+  background: #fff;
+  color: #111827;
+  border: 1px solid #d1d5db;
+  padding: 8px 10px;
+  border-radius: 10px;
+}
+
+.footer {
+  margin-top: 14px;
+  color: #6b7280;
+  font-size: 12px;
+  text-align: center;
+}
