@@ -3,246 +3,218 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Simple Task Tracker</title>
-  <meta name="theme-color" content="#111827" />
-  <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="styles.css" />
+  <meta name="color-scheme" content="light dark" />
+  <title>TaskFlow</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
-  <main class="app" aria-label="Task tracker app">
-    <header class="header">
-      <div class="header-left">
-        <h1>Simple Task Tracker</h1>
-        <p class="sub">No sign-in. Saves to this browser. Works offline.</p>
-      </div>
+  <!-- Mobile drawer backdrop -->
+  <div id="scrim" class="scrim hidden" aria-hidden="true"></div>
 
-      <div class="header-right">
-        <button id="themeBtn" class="pill" type="button" aria-label="Toggle dark mode">🌙</button>
-        <button id="printBtn" class="pill" type="button">Print</button>
-      </div>
-    </header>
-
-    <section class="panel" aria-label="List and add task">
-      <div class="row row-wrap">
-        <div class="field">
-          <label for="listSelect">List</label>
-          <div class="inline">
-            <select id="listSelect" aria-label="Select list"></select>
-            <button id="newListBtn" class="btn" type="button">New List</button>
-            <button id="renameListBtn" class="btn" type="button">Rename</button>
-            <button id="deleteListBtn" class="btn danger" type="button">Delete</button>
+  <div class="appShell">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar" aria-label="Sidebar">
+      <div class="sideHeader">
+        <div class="brand">
+          <div class="brandMark" aria-hidden="true">TF</div>
+          <div class="brandText">
+            <div class="brandName">TaskFlow</div>
+            <div class="brandSub">Local, fast, no sign-in</div>
           </div>
         </div>
 
-        <div class="field grow">
-          <label for="taskText">New task</label>
-          <div class="inline">
-            <input id="taskText" type="text" placeholder="Add a task… (Enter to add)" autocomplete="off" />
-            <button id="addTaskBtn" class="btn primary" type="button">Add</button>
-          </div>
-        </div>
+        <button id="closeSidebarBtn" class="iconBtn onlyMobile" type="button" aria-label="Close sidebar">
+          ✕
+        </button>
       </div>
 
-      <div class="row row-wrap">
-        <div class="field">
-          <label for="dueInput">Due</label>
-          <input id="dueInput" type="datetime-local" />
+      <div class="sideSection">
+        <div class="sideSectionRow">
+          <div class="sideTitle">Lists</div>
+          <button id="newListBtn" class="ghostBtn" type="button">New</button>
         </div>
 
-        <div class="field">
-          <label for="prioritySelect">Priority</label>
-          <select id="prioritySelect">
-            <option value="low">Low</option>
-            <option value="med" selected>Medium</option>
-            <option value="high">High</option>
-          </select>
-        </div>
-
-        <div class="field grow">
-          <label for="tagsInput">Tags</label>
-          <input id="tagsInput" type="text" placeholder="comma separated (e.g., school, bills)" />
-        </div>
-
-        <div class="field">
-          <label for="repeatSelect">Repeat</label>
-          <select id="repeatSelect">
-            <option value="none" selected>None</option>
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-            <option value="custom">Custom…</option>
-          </select>
-        </div>
-
-        <div class="field hidden" id="customRepeatWrap">
-          <label for="customRepeatDays">Every (days)</label>
-          <input id="customRepeatDays" type="number" min="1" value="7" />
-        </div>
+        <div id="lists" class="lists" role="list"></div>
       </div>
 
-      <div class="row">
-        <div class="field grow">
-          <label for="notesInput">Notes (optional)</label>
-          <input id="notesInput" type="text" placeholder="Optional notes…" />
-        </div>
-      </div>
-    </section>
+      <div class="sideSection">
+        <div class="sideTitle">Tools</div>
+        <div class="toolRow">
+          <button id="themeBtn" class="toolBtn" type="button">
+            <span class="toolIcon" aria-hidden="true">☾</span>
+            <span>Theme</span>
+          </button>
 
-    <section class="panel" aria-label="Filters and tools">
-      <div class="row row-wrap">
-        <div class="field grow">
-          <label for="searchInput">Search</label>
-          <input id="searchInput" type="text" placeholder="Search tasks…" />
-        </div>
+          <button id="exportBtn" class="toolBtn" type="button">
+            <span class="toolIcon" aria-hidden="true">⭳</span>
+            <span>Export</span>
+          </button>
 
-        <div class="field">
-          <label for="statusFilter">Status</label>
-          <select id="statusFilter">
-            <option value="all" selected>All</option>
-            <option value="active">Active</option>
-            <option value="completed">Completed</option>
-            <option value="archived">Archived</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="priorityFilter">Priority</label>
-          <select id="priorityFilter">
-            <option value="any" selected>Any</option>
-            <option value="high">High</option>
-            <option value="med">Medium</option>
-            <option value="low">Low</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="tagFilter">Tag</label>
-          <select id="tagFilter">
-            <option value="any" selected>Any</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="dueFilter">Due</label>
-          <select id="dueFilter">
-            <option value="any" selected>Any</option>
-            <option value="overdue">Overdue</option>
-            <option value="today">Today</option>
-            <option value="week">Next 7 days</option>
-            <option value="nodue">No due date</option>
-          </select>
-        </div>
-
-        <div class="field">
-          <label for="sortSelect">Sort</label>
-          <select id="sortSelect">
-            <option value="pinned_due" selected>Pinned → Due</option>
-            <option value="created_desc">Newest</option>
-            <option value="due_asc">Due soon</option>
-            <option value="priority_desc">Priority</option>
-            <option value="alpha_asc">A → Z</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="row row-wrap">
-        <div class="meta">
-          <span id="countText">0 remaining</span>
-          <div class="progress" aria-label="Progress">
-            <div id="progressBar" class="progress-bar"></div>
-          </div>
-        </div>
-
-        <div class="tools">
-          <button id="clearCompletedBtn" class="btn" type="button">Clear completed</button>
-          <button id="exportJsonBtn" class="btn" type="button">Export JSON</button>
-          <label class="btn file">
-            Import JSON
-            <input id="importJsonInput" type="file" accept="application/json" />
+          <label class="toolBtn fileBtn" role="button" tabindex="0">
+            <span class="toolIcon" aria-hidden="true">⭱</span>
+            <span>Import</span>
+            <input id="importInput" type="file" accept="application/json" />
           </label>
-          <button id="exportCsvBtn" class="btn" type="button">Export CSV</button>
-          <button id="resetBtn" class="btn danger" type="button">Reset</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="panel" aria-label="Task list">
-      <ul id="taskList" class="list"></ul>
-      <div id="emptyState" class="empty hidden">
-        <h3>No tasks match your filters.</h3>
-        <p>Try changing filters or add a new task above.</p>
-      </div>
-    </section>
-
-    <footer class="footer">
-      <small>Tip: Click task text to edit. Use Enter to add. Data stored only in your browser.</small>
-    </footer>
-  </main>
-
-  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
-
-  <dialog id="taskDialog" class="dialog">
-    <form method="dialog" id="taskForm">
-      <h3 id="dialogTitle">Edit Task</h3>
-
-      <label>Task</label>
-      <input id="editText" type="text" required />
-
-      <div class="grid">
-        <div>
-          <label>Due</label>
-          <input id="editDue" type="datetime-local" />
-        </div>
-        <div>
-          <label>Priority</label>
-          <select id="editPriority">
-            <option value="low">Low</option>
-            <option value="med">Medium</option>
-            <option value="high">High</option>
-          </select>
         </div>
       </div>
 
-      <label>Tags</label>
-      <input id="editTags" type="text" placeholder="comma separated" />
-
-      <label>Notes</label>
-      <input id="editNotes" type="text" />
-
-      <div class="grid">
-        <div>
-          <label>Repeat</label>
-          <select id="editRepeat">
-            <option value="none">None</option>
-            <option value="daily">Daily</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-            <option value="custom">Custom…</option>
-          </select>
-        </div>
-        <div id="editCustomRepeatWrap" class="hidden">
-          <label>Every (days)</label>
-          <input id="editCustomRepeatDays" type="number" min="1" value="7" />
-        </div>
+      <div class="sideFooter">
+        <div class="sideHint">Saved to this browser (localStorage).</div>
       </div>
+    </aside>
 
-      <div class="subtasks">
-        <div class="subtasks-head">
-          <strong>Subtasks</strong>
-          <div class="inline">
-            <input id="subtaskText" type="text" placeholder="Add subtask…" />
-            <button id="addSubtaskBtn" class="btn" type="button">Add</button>
+    <!-- Main -->
+    <main class="main" aria-label="Main content">
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="topLeft">
+          <button id="openSidebarBtn" class="iconBtn onlyMobile" type="button" aria-label="Open sidebar">☰</button>
+
+          <div class="titleBlock">
+            <div id="activeListName" class="pageTitle">My Tasks</div>
+            <div id="statsText" class="pageSub">0 remaining</div>
           </div>
         </div>
-        <ul id="subtaskList" class="subtask-list"></ul>
+
+        <div class="topRight">
+          <div class="searchWrap">
+            <span class="searchIcon" aria-hidden="true">⌕</span>
+            <input id="searchInput" class="searchInput" type="text" placeholder="Search tasks or tags…" />
+            <button id="clearSearchBtn" class="clearSearch hidden" type="button" aria-label="Clear search">✕</button>
+          </div>
+
+          <button id="moreBtn" class="iconBtn onlyDesktop" type="button" aria-label="More">
+            ⋯
+          </button>
+
+          <div id="moreMenu" class="menu hidden" role="menu" aria-label="More menu">
+            <button id="renameListBtn" class="menuItem" role="menuitem" type="button">Rename list</button>
+            <button id="deleteListBtn" class="menuItem danger" role="menuitem" type="button">Delete list</button>
+          </div>
+        </div>
+      </header>
+
+      <!-- Composer -->
+      <section class="composer" aria-label="Add task">
+        <div class="composerRow">
+          <div class="composerMain">
+            <input id="taskTitle" class="input" type="text" placeholder="Add a task… (Enter to add)" />
+          </div>
+          <button id="addBtn" class="btn primary" type="button">Add</button>
+        </div>
+
+        <div class="composerBar">
+          <button id="detailsBtn" class="pillBtn" type="button" aria-expanded="false">
+            Details <span class="chev" aria-hidden="true">▾</span>
+          </button>
+
+          <div class="segmented" role="tablist" aria-label="Filter">
+            <button class="segBtn active" data-filter="all" role="tab" aria-selected="true">All</button>
+            <button class="segBtn" data-filter="active" role="tab" aria-selected="false">Active</button>
+            <button class="segBtn" data-filter="completed" role="tab" aria-selected="false">Completed</button>
+          </div>
+
+          <div class="spacer"></div>
+
+          <label class="smallLabel" for="sortSelect">Sort</label>
+          <select id="sortSelect" class="select">
+            <option value="newest" selected>Newest</option>
+            <option value="due">Due date</option>
+            <option value="priority">Priority</option>
+            <option value="alpha">A → Z</option>
+          </select>
+        </div>
+
+        <div id="detailsPanel" class="details hidden" aria-label="Task details">
+          <div class="grid">
+            <div class="field">
+              <label>Due date</label>
+              <input id="taskDue" class="input" type="date" />
+            </div>
+
+            <div class="field">
+              <label>Priority</label>
+              <select id="taskPriority" class="select">
+                <option value="low">Low</option>
+                <option value="med" selected>Medium</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+
+            <div class="field span2">
+              <label>Tags</label>
+              <input id="taskTags" class="input" type="text" placeholder="Comma separated (e.g., school, bills)" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Content -->
+      <section class="content" aria-label="Tasks">
+        <div id="emptyState" class="empty hidden">
+          <div class="emptyTitle">Nothing here yet</div>
+          <div class="emptySub">Add a task above or switch lists.</div>
+        </div>
+
+        <ul id="taskList" class="taskList" aria-label="Task list"></ul>
+      </section>
+    </main>
+  </div>
+
+  <!-- Edit Modal -->
+  <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Edit task">
+    <div class="modalCard">
+      <div class="modalHead">
+        <div class="modalTitle">Edit task</div>
+        <button id="closeModalBtn" class="iconBtn" type="button" aria-label="Close">✕</button>
       </div>
 
-      <div class="dialog-actions">
-        <button class="btn" value="cancel">Cancel</button>
-        <button id="saveTaskBtn" class="btn primary" value="default">Save</button>
+      <div class="modalBody">
+        <div class="field">
+          <label>Title</label>
+          <input id="editTitle" class="input" type="text" />
+        </div>
+
+        <div class="grid">
+          <div class="field">
+            <label>Due date</label>
+            <input id="editDue" class="input" type="date" />
+          </div>
+
+          <div class="field">
+            <label>Priority</label>
+            <select id="editPriority" class="select">
+              <option value="low">Low</option>
+              <option value="med">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+
+          <div class="field span2">
+            <label>Tags</label>
+            <input id="editTags" class="input" type="text" placeholder="Comma separated" />
+          </div>
+        </div>
       </div>
-    </form>
-  </dialog>
+
+      <div class="modalActions">
+        <button id="deleteTaskBtn" class="btn danger" type="button">Delete</button>
+        <div class="spacer"></div>
+        <button id="cancelEditBtn" class="btn" type="button">Cancel</button>
+        <button id="saveEditBtn" class="btn primary" type="button">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden" role="status" aria-live="polite">
+    <div id="toastMsg" class="toastMsg">Saved</div>
+    <div class="toastActions">
+      <button id="toastUndoBtn" class="toastBtn hidden" type="button">Undo</button>
+      <button id="toastCloseBtn" class="toastBtn" type="button">Close</button>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>

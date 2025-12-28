@@ -1,125 +1,105 @@
-/* Simple Task Tracker — no sign-in, localStorage, offline-ready
-   Features: lists, tasks, subtasks, due, priority, tags, notes, pinned, archive,
-   recurring, filters, sort, export/import, CSV, print, dark mode, undo delete, migrations.
+/* TaskFlow — Professional UI + localStorage data model
+   Features:
+   - Multiple lists
+   - Add task (title, due, priority, tags) with progressive details panel
+   - Search
+   - Filter: All/Active/Completed
+   - Sort: Newest/Due/Priority/Alpha
+   - Edit modal (same fields)
+   - Export/Import JSON
+   - Theme toggle (saved)
+   - Mobile drawer sidebar
+   - Toast + undo delete
 */
 
-const STORAGE_KEY = "simple_task_tracker_v2";
-const SCHEMA_VERSION = 2;
+const STORAGE_KEY = "taskflow_major_ui_v1";
 
 const $ = (id) => document.getElementById(id);
+const qs = (sel, root = document) => root.querySelector(sel);
+const qsa = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
 const els = {
-  listSelect: $("listSelect"),
+  scrim: $("scrim"),
+  sidebar: $("sidebar"),
+  openSidebarBtn: $("openSidebarBtn"),
+  closeSidebarBtn: $("closeSidebarBtn"),
+
+  lists: $("lists"),
   newListBtn: $("newListBtn"),
+
+  activeListName: $("activeListName"),
+  statsText: $("statsText"),
+
+  moreBtn: $("moreBtn"),
+  moreMenu: $("moreMenu"),
   renameListBtn: $("renameListBtn"),
   deleteListBtn: $("deleteListBtn"),
 
-  taskText: $("taskText"),
-  addTaskBtn: $("addTaskBtn"),
-  dueInput: $("dueInput"),
-  prioritySelect: $("prioritySelect"),
-  tagsInput: $("tagsInput"),
-  notesInput: $("notesInput"),
-  repeatSelect: $("repeatSelect"),
-  customRepeatWrap: $("customRepeatWrap"),
-  customRepeatDays: $("customRepeatDays"),
+  themeBtn: $("themeBtn"),
+  exportBtn: $("exportBtn"),
+  importInput: $("importInput"),
 
   searchInput: $("searchInput"),
-  statusFilter: $("statusFilter"),
-  priorityFilter: $("priorityFilter"),
-  tagFilter: $("tagFilter"),
-  dueFilter: $("dueFilter"),
+  clearSearchBtn: $("clearSearchBtn"),
+
+  taskTitle: $("taskTitle"),
+  addBtn: $("addBtn"),
+  detailsBtn: $("detailsBtn"),
+  detailsPanel: $("detailsPanel"),
+  taskDue: $("taskDue"),
+  taskPriority: $("taskPriority"),
+  taskTags: $("taskTags"),
+
   sortSelect: $("sortSelect"),
+  segBtns: qsa(".segBtn"),
 
-  countText: $("countText"),
-  progressBar: $("progressBar"),
-
-  clearCompletedBtn: $("clearCompletedBtn"),
-  exportJsonBtn: $("exportJsonBtn"),
-  importJsonInput: $("importJsonInput"),
-  exportCsvBtn: $("exportCsvBtn"),
-  resetBtn: $("resetBtn"),
-
-  taskList: $("taskList"),
   emptyState: $("emptyState"),
+  taskList: $("taskList"),
 
-  themeBtn: $("themeBtn"),
-  printBtn: $("printBtn"),
+  modal: $("modal"),
+  closeModalBtn: $("closeModalBtn"),
+  cancelEditBtn: $("cancelEditBtn"),
+  saveEditBtn: $("saveEditBtn"),
+  deleteTaskBtn: $("deleteTaskBtn"),
 
-  toast: $("toast"),
-
-  taskDialog: $("taskDialog"),
-  dialogTitle: $("dialogTitle"),
-  editText: $("editText"),
+  editTitle: $("editTitle"),
   editDue: $("editDue"),
   editPriority: $("editPriority"),
   editTags: $("editTags"),
-  editNotes: $("editNotes"),
-  editRepeat: $("editRepeat"),
-  editCustomRepeatWrap: $("editCustomRepeatWrap"),
-  editCustomRepeatDays: $("editCustomRepeatDays"),
 
-  subtaskText: $("subtaskText"),
-  addSubtaskBtn: $("addSubtaskBtn"),
-  subtaskList: $("subtaskList"),
-
-  taskForm: $("taskForm")
+  toast: $("toast"),
+  toastMsg: $("toastMsg"),
+  toastUndoBtn: $("toastUndoBtn"),
+  toastCloseBtn: $("toastCloseBtn"),
 };
 
 const uid = () => Math.random().toString(16).slice(2) + Date.now().toString(16);
-const nowISO = () => new Date().toISOString();
-const toLocalInput = (iso) => {
-  if (!iso) return "";
-  const d = new Date(iso);
-  const pad = (n) => String(n).padStart(2, "0");
-  const yyyy = d.getFullYear();
-  const mm = pad(d.getMonth() + 1);
-  const dd = pad(d.getDate());
-  const hh = pad(d.getHours());
-  const mi = pad(d.getMinutes());
-  return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
-};
-const fromLocalInput = (value) => {
-  if (!value) return null;
-  // Treat as local time and convert to ISO
-  const d = new Date(value);
-  return isNaN(d.getTime()) ? null : d.toISOString();
-};
 
 function parseTags(input) {
   return (input || "")
     .split(",")
     .map(s => s.trim())
     .filter(Boolean)
-    .slice(0, 20);
+    .slice(0, 12);
 }
 
-function prettyDue(iso) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  return d.toLocaleString([], { year: "numeric", month: "short", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+function fmtDue(due) {
+  if (!due) return "";
+  const d = new Date(due + "T00:00:00");
+  return d.toLocaleDateString([], { month: "short", day: "2-digit", year: "numeric" });
 }
 
-function startOfDay(d) {
-  const x = new Date(d);
-  x.setHours(0,0,0,0);
-  return x;
+function todayISO() {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
 }
 
-function isSameDay(a, b) {
-  return startOfDay(a).getTime() === startOfDay(b).getTime();
-}
-
-function addDays(iso, days) {
-  const d = new Date(iso);
-  d.setDate(d.getDate() + days);
-  return d.toISOString();
-}
-
-function addMonths(iso, months) {
-  const d = new Date(iso);
-  d.setMonth(d.getMonth() + months);
-  return d.toISOString();
+function isOverdue(due, completed) {
+  if (!due || completed) return false;
+  return due < todayISO();
 }
 
 function priorityRank(p) {
@@ -128,84 +108,41 @@ function priorityRank(p) {
   return 1;
 }
 
-function confirmAction(message) {
-  return window.confirm(message);
-}
-
-/* ------------------ Data Model ------------------
+/* ---------------- State ----------------
 state = {
-  schemaVersion: 2,
-  settings: { theme: "light"|"dark" },
+  theme: "dark"|"light",
   activeListId: string,
-  lists: [{ id, name, createdAt }],
-  tasks: [{
-    id, listId, text, notes, dueAt, createdAt,
-    priority: "low"|"med"|"high",
-    tags: string[],
-    pinned: bool,
-    completedAt: iso|null,
-    archivedAt: iso|null,
-    recurrence: { type:"none"|"daily"|"weekly"|"monthly"|"custom", everyDays?: number }|null,
-    subtasks: [{ id, text, done }]
-  }]
+  filter: "all"|"active"|"completed",
+  sort: "newest"|"due"|"priority"|"alpha",
+  lists: [{id,name,createdAt}],
+  tasks: [{id,listId,title,due,priority,tags,completed,createdAt}]
 }
--------------------------------------------------- */
+---------------------------------------- */
 
 function defaultState() {
   const listId = uid();
   return {
-    schemaVersion: SCHEMA_VERSION,
-    settings: { theme: "light" },
+    theme: "dark",
     activeListId: listId,
-    lists: [{ id: listId, name: "My Tasks", createdAt: nowISO() }],
+    filter: "all",
+    sort: "newest",
+    lists: [{ id: listId, name: "My Tasks", createdAt: Date.now() }],
     tasks: []
   };
-}
-
-function migrateState(raw) {
-  // If nothing exists, return default
-  if (!raw || typeof raw !== "object") return defaultState();
-
-  // v1 -> v2 example: ensure schemaVersion and settings exist
-  const s = { ...raw };
-
-  if (!s.schemaVersion) s.schemaVersion = 1;
-  if (!s.settings) s.settings = { theme: "light" };
-  if (!Array.isArray(s.lists)) s.lists = [];
-  if (!Array.isArray(s.tasks)) s.tasks = [];
-
-  // Ensure at least one list
-  if (s.lists.length === 0) {
-    const listId = uid();
-    s.lists.push({ id: listId, name: "My Tasks", createdAt: nowISO() });
-    s.activeListId = listId;
-  }
-
-  // Normalize tasks
-  s.tasks = s.tasks.map(t => ({
-    id: t.id || uid(),
-    listId: t.listId || s.activeListId,
-    text: (t.text ?? "").toString(),
-    notes: (t.notes ?? "").toString(),
-    dueAt: t.dueAt || null,
-    createdAt: t.createdAt || nowISO(),
-    priority: t.priority || "med",
-    tags: Array.isArray(t.tags) ? t.tags : [],
-    pinned: !!t.pinned,
-    completedAt: t.completedAt || null,
-    archivedAt: t.archivedAt || null,
-    recurrence: t.recurrence || null,
-    subtasks: Array.isArray(t.subtasks) ? t.subtasks : []
-  }));
-
-  s.schemaVersion = SCHEMA_VERSION;
-  return s;
 }
 
 function loadState() {
   try {
     const raw = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return migrateState(raw);
+    if (!raw || !Array.isArray(raw.lists) || !Array.isArray(raw.tasks)) throw new Error("bad");
+    // minimal normalization
+    raw.theme = raw.theme === "light" ? "light" : "dark";
+    raw.filter = ["all","active","completed"].includes(raw.filter) ? raw.filter : "all";
+    raw.sort = ["newest","due","priority","alpha"].includes(raw.sort) ? raw.sort : "newest";
+    if (!raw.activeListId || !raw.lists.some(l => l.id === raw.activeListId)) {
+      raw.activeListId = raw.lists[0]?.id || uid();
+    }
+    return raw;
   } catch {
     return defaultState();
   }
@@ -217,622 +154,455 @@ function saveState() {
 
 let state = loadState();
 
-/* ------------------ Theme ------------------ */
+/* ---------------- UI helpers ---------------- */
+
 function applyTheme() {
-  document.documentElement.setAttribute("data-theme", state.settings.theme === "dark" ? "dark" : "light");
-  els.themeBtn.textContent = state.settings.theme === "dark" ? "☀️" : "🌙";
-}
-function toggleTheme() {
-  state.settings.theme = state.settings.theme === "dark" ? "light" : "dark";
-  saveState();
-  applyTheme();
+  document.documentElement.setAttribute("data-theme", state.theme === "light" ? "light" : "dark");
+  els.themeBtn.querySelector(".toolIcon")?.remove();
+  // Keep button label stable, just swap icon in first span if present
+  const iconSpan = els.themeBtn.querySelector(".toolIcon") || document.createElement("span");
+  iconSpan.className = "toolIcon";
+  iconSpan.textContent = state.theme === "light" ? "☾" : "☀";
+  if (!els.themeBtn.querySelector(".toolIcon")) els.themeBtn.prepend(iconSpan);
 }
 
-/* ------------------ Lists ------------------ */
-function renderLists() {
-  els.listSelect.innerHTML = "";
-  for (const list of state.lists) {
-    const opt = document.createElement("option");
-    opt.value = list.id;
-    opt.textContent = list.name;
-    if (list.id === state.activeListId) opt.selected = true;
-    els.listSelect.appendChild(opt);
+function closeSidebar() {
+  els.sidebar.classList.remove("open");
+  els.scrim.classList.add("hidden");
+  els.scrim.setAttribute("aria-hidden", "true");
+}
+
+function openSidebar() {
+  els.sidebar.classList.add("open");
+  els.scrim.classList.remove("hidden");
+  els.scrim.setAttribute("aria-hidden", "false");
+}
+
+function showToast(message, { undoText = null, onUndo = null, timeoutMs = 4500 } = {}) {
+  els.toastMsg.textContent = message;
+  els.toast.classList.remove("hidden");
+
+  if (undoText && onUndo) {
+    els.toastUndoBtn.textContent = undoText;
+    els.toastUndoBtn.classList.remove("hidden");
+    els.toastUndoBtn.onclick = () => {
+      onUndo();
+      hideToast();
+    };
+  } else {
+    els.toastUndoBtn.classList.add("hidden");
+    els.toastUndoBtn.onclick = null;
   }
-}
-function setActiveList(id) {
-  state.activeListId = id;
-  saveState();
-  renderAll();
+
+  els.toastCloseBtn.onclick = hideToast;
+
+  window.clearTimeout(showToast._t);
+  showToast._t = window.setTimeout(() => hideToast(), timeoutMs);
 }
 
-function createList() {
+function hideToast() {
+  els.toast.classList.add("hidden");
+  els.toastUndoBtn.classList.add("hidden");
+  els.toastUndoBtn.onclick = null;
+  window.clearTimeout(showToast._t);
+}
+
+/* ---------------- Lists ---------------- */
+
+function listRemainingCount(listId) {
+  return state.tasks.filter(t => t.listId === listId && !t.completed).length;
+}
+
+function activeList() {
+  return state.lists.find(l => l.id === state.activeListId) || state.lists[0];
+}
+
+function renderLists() {
+  els.lists.innerHTML = "";
+
+  state.lists
+    .slice()
+    .sort((a,b) => a.createdAt - b.createdAt)
+    .forEach(list => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "listItem" + (list.id === state.activeListId ? " active" : "");
+
+      const name = document.createElement("div");
+      name.className = "listName";
+      name.textContent = list.name;
+
+      const count = document.createElement("div");
+      count.className = "listCount";
+      count.textContent = `${listRemainingCount(list.id)} left`;
+
+      btn.appendChild(name);
+      btn.appendChild(count);
+
+      btn.addEventListener("click", () => {
+        state.activeListId = list.id;
+        saveState();
+        renderAll();
+        closeSidebar();
+      });
+
+      els.lists.appendChild(btn);
+    });
+}
+
+function newList() {
   const name = prompt("New list name:", "New List");
   if (!name) return;
-  const list = { id: uid(), name: name.trim().slice(0, 60), createdAt: nowISO() };
+  const list = { id: uid(), name: name.trim().slice(0, 40), createdAt: Date.now() };
   state.lists.push(list);
   state.activeListId = list.id;
   saveState();
   renderAll();
+  showToast("List created.");
 }
 
-function renameList() {
-  const current = state.lists.find(l => l.id === state.activeListId);
-  if (!current) return;
-  const name = prompt("Rename list:", current.name);
+function renameActiveList() {
+  const list = activeList();
+  if (!list) return;
+  const name = prompt("Rename list:", list.name);
   if (!name) return;
-  current.name = name.trim().slice(0, 60);
+  list.name = name.trim().slice(0, 40);
   saveState();
-  renderLists();
+  renderAll();
+  showToast("List renamed.");
 }
 
-function deleteList() {
+function deleteActiveList() {
   if (state.lists.length <= 1) {
     alert("You need at least one list.");
     return;
   }
-  const current = state.lists.find(l => l.id === state.activeListId);
-  if (!current) return;
+  const list = activeList();
+  if (!list) return;
 
-  if (!confirmAction(`Delete list "${current.name}" and all its tasks?`)) return;
+  const ok = confirm(`Delete "${list.name}" and all tasks in it?`);
+  if (!ok) return;
 
-  state.tasks = state.tasks.filter(t => t.listId !== current.id);
-  state.lists = state.lists.filter(l => l.id !== current.id);
+  state.tasks = state.tasks.filter(t => t.listId !== list.id);
+  state.lists = state.lists.filter(l => l.id !== list.id);
   state.activeListId = state.lists[0].id;
   saveState();
   renderAll();
+  showToast("List deleted.");
 }
 
-/* ------------------ Tasks ------------------ */
-function recurrenceFromInputs(type, customDays) {
-  if (!type || type === "none") return null;
-  if (type === "custom") {
-    const n = Number(customDays);
-    if (!Number.isFinite(n) || n < 1) return null;
-    return { type: "custom", everyDays: Math.floor(n) };
-  }
-  return { type };
-}
-
-function nextDueFromRecurrence(task) {
-  if (!task.recurrence) return null;
-  const base = task.dueAt || nowISO();
-  const rt = task.recurrence.type;
-  if (rt === "daily") return addDays(base, 1);
-  if (rt === "weekly") return addDays(base, 7);
-  if (rt === "monthly") return addMonths(base, 1);
-  if (rt === "custom") return addDays(base, task.recurrence.everyDays || 7);
-  return null;
-}
+/* ---------------- Tasks ---------------- */
 
 function addTask() {
-  const text = els.taskText.value.trim();
-  if (!text) return;
-
-  const dueAt = fromLocalInput(els.dueInput.value);
-  const priority = els.prioritySelect.value;
-  const tags = parseTags(els.tagsInput.value);
-  const notes = (els.notesInput.value || "").trim().slice(0, 300);
-  const repeatType = els.repeatSelect.value;
-  const recurrence = recurrenceFromInputs(repeatType, els.customRepeatDays.value);
+  const title = els.taskTitle.value.trim();
+  if (!title) return;
 
   const task = {
     id: uid(),
     listId: state.activeListId,
-    text: text.slice(0, 140),
-    notes,
-    dueAt,
-    createdAt: nowISO(),
-    priority,
-    tags,
-    pinned: false,
-    completedAt: null,
-    archivedAt: null,
-    recurrence,
-    subtasks: []
+    title: title.slice(0, 140),
+    due: els.taskDue.value || "",
+    priority: els.taskPriority.value || "med",
+    tags: parseTags(els.taskTags.value),
+    completed: false,
+    createdAt: Date.now()
   };
 
   state.tasks.unshift(task);
+
+  els.taskTitle.value = "";
+  // keep details (due/priority/tags) as user choices, but reset tags for convenience
+  els.taskTags.value = "";
+
   saveState();
+  renderAll();
+  showToast("Task added.");
+}
 
-  // reset add form
-  els.taskText.value = "";
-  els.dueInput.value = "";
-  els.tagsInput.value = "";
-  els.notesInput.value = "";
-  els.prioritySelect.value = "med";
-  els.repeatSelect.value = "none";
-  els.customRepeatWrap.classList.add("hidden");
-
+function toggleComplete(taskId) {
+  const t = state.tasks.find(x => x.id === taskId);
+  if (!t) return;
+  t.completed = !t.completed;
+  saveState();
   renderAll();
 }
 
 function deleteTask(taskId) {
   const idx = state.tasks.findIndex(t => t.id === taskId);
   if (idx < 0) return;
+
   const removed = state.tasks[idx];
   state.tasks.splice(idx, 1);
   saveState();
   renderAll();
-  showUndoToast(removed, idx);
+
+  showToast("Task deleted.", {
+    undoText: "Undo",
+    onUndo: () => {
+      state.tasks.splice(idx, 0, removed);
+      saveState();
+      renderAll();
+    }
+  });
 }
 
-function showUndoToast(task, index) {
-  els.toast.classList.remove("hidden");
-  els.toast.innerHTML = "";
+/* ---------------- Filters / Sort / Search ---------------- */
 
-  const msg = document.createElement("div");
-  msg.textContent = `Deleted: "${task.text}"`;
+function setFilter(filter) {
+  state.filter = filter;
+  els.segBtns.forEach(b => {
+    const on = b.dataset.filter === filter;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-selected", on ? "true" : "false");
+  });
+  saveState();
+  renderTasks();
+}
 
-  const undo = document.createElement("button");
-  undo.textContent = "Undo";
-  undo.addEventListener("click", () => {
-    state.tasks.splice(index, 0, task);
-    saveState();
-    hideToast();
-    renderAll();
+function filteredTasks() {
+  const q = (els.searchInput.value || "").trim().toLowerCase();
+
+  let tasks = state.tasks.filter(t => t.listId === state.activeListId);
+
+  if (state.filter === "active") tasks = tasks.filter(t => !t.completed);
+  if (state.filter === "completed") tasks = tasks.filter(t => t.completed);
+
+  if (q) {
+    tasks = tasks.filter(t => {
+      const blob = `${t.title} ${(t.tags || []).join(" ")}`.toLowerCase();
+      return blob.includes(q);
+    });
+  }
+
+  const mode = state.sort;
+  tasks.sort((a,b) => {
+    if (mode === "newest") return b.createdAt - a.createdAt;
+    if (mode === "alpha") return a.title.localeCompare(b.title);
+    if (mode === "priority") {
+      const d = priorityRank(b.priority) - priorityRank(a.priority);
+      if (d !== 0) return d;
+      return b.createdAt - a.createdAt;
+    }
+    // due
+    const ad = a.due || "9999-12-31";
+    const bd = b.due || "9999-12-31";
+    if (ad !== bd) return ad.localeCompare(bd);
+    return b.createdAt - a.createdAt;
   });
 
-  const close = document.createElement("button");
-  close.textContent = "Dismiss";
-  close.addEventListener("click", hideToast);
-
-  els.toast.appendChild(msg);
-  els.toast.appendChild(undo);
-  els.toast.appendChild(close);
-
-  // auto hide
-  setTimeout(() => {
-    if (!els.toast.classList.contains("hidden")) hideToast();
-  }, 7000);
+  return tasks;
 }
 
-function hideToast() {
-  els.toast.classList.add("hidden");
-  els.toast.innerHTML = "";
+/* ---------------- Rendering ---------------- */
+
+function renderHeaderStats() {
+  const list = activeList();
+  els.activeListName.textContent = list?.name || "My Tasks";
+
+  const allInList = state.tasks.filter(t => t.listId === state.activeListId);
+  const remaining = allInList.filter(t => !t.completed).length;
+  els.statsText.textContent = `${remaining} remaining`;
 }
 
-function togglePinned(taskId) {
-  const t = state.tasks.find(x => x.id === taskId);
-  if (!t) return;
-  t.pinned = !t.pinned;
-  saveState();
-  renderAll();
+function makeBadge(text, cls = "") {
+  const b = document.createElement("span");
+  b.className = "badge" + (cls ? ` ${cls}` : "");
+  b.textContent = text;
+  return b;
 }
 
-function toggleComplete(taskId) {
-  const t = state.tasks.find(x => x.id === taskId);
-  if (!t) return;
+function renderTasks() {
+  renderHeaderStats();
 
-  const wasCompleted = !!t.completedAt;
-  t.completedAt = wasCompleted ? null : nowISO();
+  const tasks = filteredTasks();
+  els.taskList.innerHTML = "";
 
-  // If completing a recurring task, create next occurrence
-  if (!wasCompleted && t.recurrence) {
-    const nextDue = nextDueFromRecurrence(t);
-    const nextTask = {
-      ...t,
-      id: uid(),
-      createdAt: nowISO(),
-      completedAt: null,
-      archivedAt: null,
-      pinned: false,
-      dueAt: nextDue,
-      subtasks: t.subtasks.map(st => ({ ...st, id: uid(), done: false }))
-    };
-    state.tasks.unshift(nextTask);
-  }
+  els.emptyState.classList.toggle("hidden", tasks.length !== 0);
 
-  saveState();
-  renderAll();
-}
-
-function toggleArchive(taskId) {
-  const t = state.tasks.find(x => x.id === taskId);
-  if (!t) return;
-  t.archivedAt = t.archivedAt ? null : nowISO();
-  saveState();
-  renderAll();
-}
-
-function clearCompleted() {
-  if (!confirmAction("Clear all completed tasks in this list (not archived)?")) return;
-  state.tasks = state.tasks.filter(t => !(t.listId === state.activeListId && t.completedAt && !t.archivedAt));
-  saveState();
-  renderAll();
-}
-
-function resetAll() {
-  if (!confirmAction("Reset everything? This deletes all lists and tasks in this browser.")) return;
-  localStorage.removeItem(STORAGE_KEY);
-  state = defaultState();
-  applyTheme();
-  renderAll();
-}
-
-/* ------------------ Dialog Editing ------------------ */
-let editingTaskId = null;
-
-function openEditDialog(taskId) {
-  const t = state.tasks.find(x => x.id === taskId);
-  if (!t) return;
- editingTaskId = taskId;
-
-  els.dialogTitle.textContent = "Edit Task";
-  els.editText.value = t.text;
-  els.editDue.value = toLocalInput(t.dueAt);
-  els.editPriority.value = t.priority;
-  els.editTags.value = (t.tags || []).join(", ");
-  els.editNotes.value = t.notes || "";
-
-  const rec = t.recurrence?.type || "none";
-  els.editRepeat.value = rec;
-  if (rec === "custom") {
-    els.editCustomRepeatWrap.classList.remove("hidden");
-    els.editCustomRepeatDays.value = String(t.recurrence?.everyDays || 7);
-  } else {
-    els.editCustomRepeatWrap.classList.add("hidden");
-  }
-
-  renderSubtasks(t);
-
-  els.taskDialog.showModal();
-  setTimeout(() => els.editText.focus(), 0);
-}
-
-function renderSubtasks(task) {
-  els.subtaskList.innerHTML = "";
-  for (const st of task.subtasks) {
+  for (const t of tasks) {
     const li = document.createElement("li");
-    li.className = "subtask-item";
+    li.className = "taskRow";
 
     const left = document.createElement("div");
-    left.className = "inline";
+    left.className = "taskLeft";
 
     const cb = document.createElement("input");
+    cb.className = "chk";
     cb.type = "checkbox";
-    cb.checked = !!st.done;
-    cb.addEventListener("change", () => {
-      st.done = cb.checked;
-      saveState();
-      renderAll(); // update badges/progress
-    });
+    cb.checked = !!t.completed;
+    cb.addEventListener("change", () => toggleComplete(t.id));
 
-    const text = document.createElement("span");
-    text.className = "st-text";
-    text.textContent = st.text;
+    const block = document.createElement("div");
+    block.style.minWidth = "0";
+
+    const title = document.createElement("div");
+    title.className = "taskTitle" + (t.completed ? " completed" : "");
+    title.textContent = t.title;
+    title.addEventListener("click", () => openEditModal(t.id));
+
+    const meta = document.createElement("div");
+    meta.className = "taskMeta";
+
+    // priority
+    meta.appendChild(makeBadge(
+      t.priority === "high" ? "High" : t.priority === "med" ? "Medium" : "Low",
+      t.priority
+    ));
+
+    // due
+    if (t.due) {
+      meta.appendChild(makeBadge(
+        `Due ${fmtDue(t.due)}`,
+        isOverdue(t.due, t.completed) ? "overdue" : ""
+      ));
+    }
+
+    // tags
+    (t.tags || []).slice(0, 4).forEach(tag => meta.appendChild(makeBadge(`#${tag}`)));
+
+    block.appendChild(title);
+    block.appendChild(meta);
 
     left.appendChild(cb);
-    left.appendChild(text);
+    left.appendChild(block);
 
-    const del = document.createElement("button");
-    del.className = "iconbtn";
-    del.type = "button";
-    del.textContent = "Remove";
-    del.addEventListener("click", () => {
-      task.subtasks = task.subtasks.filter(x => x.id !== st.id);
-      saveState();
-      renderSubtasks(task);
-      renderAll();
+    const actions = document.createElement("div");
+    actions.className = "taskActions";
+
+    const kebab = document.createElement("button");
+    kebab.className = "kebab";
+    kebab.type = "button";
+    kebab.textContent = "⋯";
+    kebab.setAttribute("aria-label", "Task actions");
+
+    kebab.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openTaskMenu(kebab, t.id);
     });
 
+    actions.appendChild(kebab);
+
     li.appendChild(left);
-    li.appendChild(del);
-    els.subtaskList.appendChild(li);
+    li.appendChild(actions);
+
+    els.taskList.appendChild(li);
+  }
+
+  renderLists(); // keep counts updated
+}
+
+function renderAll() {
+  applyTheme();
+  state.sort = els.sortSelect.value || state.sort;
+  renderLists();
+  renderHeaderStats();
+  renderTasks();
+}
+
+/* ---------------- Task menu (popover) ---------------- */
+
+let taskMenuEl = null;
+
+function closeTaskMenu() {
+  if (taskMenuEl) {
+    taskMenuEl.remove();
+    taskMenuEl = null;
   }
 }
 
-function addSubtask() {
+function openTaskMenu(anchorBtn, taskId) {
+  closeTaskMenu();
+
+  const rect = anchorBtn.getBoundingClientRect();
+  const menu = document.createElement("div");
+  menu.className = "menu";
+  menu.style.position = "fixed";
+  menu.style.top = `${Math.min(window.innerHeight - 10, rect.bottom + 6)}px`;
+  menu.style.left = `${Math.max(10, rect.right - 220)}px`;
+  menu.style.right = "auto";
+
+  const edit = document.createElement("button");
+  edit.className = "menuItem";
+  edit.textContent = "Edit";
+  edit.type = "button";
+  edit.addEventListener("click", () => {
+    closeTaskMenu();
+    openEditModal(taskId);
+  });
+
+  const del = document.createElement("button");
+  del.className = "menuItem danger";
+  del.textContent = "Delete";
+  del.type = "button";
+  del.addEventListener("click", () => {
+    closeTaskMenu();
+    deleteTask(taskId);
+  });
+
+  menu.appendChild(edit);
+  menu.appendChild(del);
+
+  document.body.appendChild(menu);
+  taskMenuEl = menu;
+}
+
+/* ---------------- Edit modal ---------------- */
+
+let editingTaskId = null;
+
+function openEditModal(taskId) {
+  const t = state.tasks.find(x => x.id === taskId);
+  if (!t) return;
+
+  editingTaskId = taskId;
+  els.editTitle.value = t.title;
+  els.editDue.value = t.due || "";
+  els.editPriority.value = t.priority || "med";
+  els.editTags.value = (t.tags || []).join(", ");
+
+  els.modal.classList.remove("hidden");
+  setTimeout(() => els.editTitle.focus(), 0);
+}
+
+function closeEditModal() {
+  editingTaskId = null;
+  els.modal.classList.add("hidden");
+}
+
+function saveEdit() {
   if (!editingTaskId) return;
   const t = state.tasks.find(x => x.id === editingTaskId);
   if (!t) return;
 
-  const text = els.subtaskText.value.trim();
-  if (!text) return;
+  const title = els.editTitle.value.trim();
+  if (!title) return;
 
-  t.subtasks.push({ id: uid(), text: text.slice(0, 120), done: false });
-  els.subtaskText.value = "";
+  t.title = title.slice(0, 140);
+  t.due = els.editDue.value || "";
+  t.priority = els.editPriority.value || "med";
+  t.tags = parseTags(els.editTags.value);
+
   saveState();
-  renderSubtasks(t);
+  closeEditModal();
   renderAll();
+  showToast("Changes saved.");
 }
 
-function saveEditDialog() {
+function deleteEditingTask() {
+  if (!editingTaskId) return;
   const t = state.tasks.find(x => x.id === editingTaskId);
   if (!t) return;
 
-  t.text = els.editText.value.trim().slice(0, 140);
-  t.dueAt = fromLocalInput(els.editDue.value);
-  t.priority = els.editPriority.value;
-  t.tags = parseTags(els.editTags.value);
-  t.notes = (els.editNotes.value || "").trim().slice(0, 300);
+  const ok = confirm(`Delete "${t.title}"?`);
+  if (!ok) return;
 
-  const rep = els.editRepeat.value;
-  t.recurrence = recurrenceFromInputs(rep, els.editCustomRepeatDays.value);
-
-  saveState();
-  renderAll();
+  closeEditModal();
+  deleteTask(editingTaskId);
 }
 
-/* ------------------ Filtering/Sorting ------------------ */
-function buildTagOptions() {
-  const tags = new Set();
-  for (const t of state.tasks) {
-    if (t.listId !== state.activeListId) continue;
-    (t.tags || []).forEach(tag => tags.add(tag));
-  }
+/* ---------------- Export / Import ---------------- */
 
-  const current = els.tagFilter.value || "any";
-  els.tagFilter.innerHTML = `<option value="any">Any</option>`;
-  Array.from(tags).sort((a,b) => a.localeCompare(b)).forEach(tag => {
-    const opt = document.createElement("option");
-    opt.value = tag;
-    opt.textContent = tag;
-    if (tag === current) opt.selected = true;
-    els.tagFilter.appendChild(opt);
-  });
-}
-
-function passesFilters(t) {
-  if (t.listId !== state.activeListId) return false;
-
-  const q = (els.searchInput.value || "").trim().toLowerCase();
-  const status = els.statusFilter.value;
-  const pf = els.priorityFilter.value;
-  const tag = els.tagFilter.value;
-  const duef = els.dueFilter.value;
-
-  // status
-  if (status === "active") {
-    if (t.archivedAt) return false;
-    if (t.completedAt) return false;
-  } else if (status === "completed") {
-    if (t.archivedAt) return false;
-    if (!t.completedAt) return false;
-  } else if (status === "archived") {
-    if (!t.archivedAt) return false;
-  } // all: show everything
-
-  // priority
-  if (pf !== "any" && t.priority !== pf) return false;
-
-  // tag
-  if (tag !== "any") {
-    if (!Array.isArray(t.tags) || !t.tags.includes(tag)) return false;
-  }
-
-  // due filter
-  const dueAt = t.dueAt ? new Date(t.dueAt) : null;
-  const now = new Date();
-  if (duef === "overdue") {
-    if (!dueAt) return false;
-    if (dueAt.getTime() >= now.getTime()) return false;
-  } else if (duef === "today") {
-    if (!dueAt) return false;
-    if (!isSameDay(dueAt, now)) return false;
-  } else if (duef === "week") {
-    if (!dueAt) return false;
-    const week = new Date(now);
-    week.setDate(now.getDate() + 7);
-    if (dueAt.getTime() < now.getTime() || dueAt.getTime() > week.getTime()) return false;
-  } else if (duef === "nodue") {
-    if (dueAt) return false;
-  }
-
-  // search
-  if (q) {
-    const blob = [
-      t.text,
-      t.notes || "",
-      (t.tags || []).join(" "),
-      (t.subtasks || []).map(s => s.text).join(" ")
-    ].join(" ").toLowerCase();
-    if (!blob.includes(q)) return false;
-  }
-
-  return true;
-}
-
-function sortTasks(a, b) {
-  const mode = els.sortSelect.value;
-
-  const ap = a.pinned ? 1 : 0;
-  const bp = b.pinned ? 1 : 0;
-
-  const aDue = a.dueAt ? new Date(a.dueAt).getTime() : Infinity;
-  const bDue = b.dueAt ? new Date(b.dueAt).getTime() : Infinity;
-
-  const aCreated = new Date(a.createdAt).getTime();
-  const bCreated = new Date(b.createdAt).getTime();
-
-  if (mode === "pinned_due") {
-    if (ap !== bp) return bp - ap;
-    if (aDue !== bDue) return aDue - bDue;
-    return bCreated - aCreated;
-  }
-
-  if (mode === "created_desc") return bCreated - aCreated;
-  if (mode === "due_asc") return aDue - bDue;
-  if (mode === "priority_desc") return priorityRank(b.priority) - priorityRank(a.priority);
-  if (mode === "alpha_asc") return (a.text || "").localeCompare(b.text || "");
-
-  return 0;
-}
-
-/* ------------------ Rendering ------------------ */
-function calcProgress() {
-  const listTasks = state.tasks.filter(t => t.listId === state.activeListId && !t.archivedAt);
-  const total = listTasks.length || 0;
-  const completed = listTasks.filter(t => t.completedAt).length;
-  const remaining = total - completed;
-  const pct = total === 0 ? 0 : Math.round((completed / total) * 100);
-  return { total, completed, remaining, pct };
-}
-
-function dueBadges(task) {
-  const out = [];
-  if (!task.dueAt) return out;
-
-  const now = new Date();
-  const due = new Date(task.dueAt);
-
-  if (due.getTime() < now.getTime() && !task.completedAt) out.push({ text: "Overdue", cls: "overdue" });
-  if (isSameDay(due, now)) out.push({ text: "Due today", cls: "" });
-
-  out.push({ text: prettyDue(task.dueAt), cls: "" });
-  return out;
-}
-
-function renderTaskItem(task) {
-  const li = document.createElement("li");
-  li.className = `item ${task.completedAt ? "completed" : ""} ${task.archivedAt ? "archived" : ""}`;
-
-  const left = document.createElement("div");
-  left.className = "item-left";
-
-  const head = document.createElement("div");
-  head.className = "item-head";
-
-  const titleline = document.createElement("div");
-  titleline.className = "titleline";
-
-  const cb = document.createElement("input");
-  cb.type = "checkbox";
-  cb.className = "check";
-  cb.checked = !!task.completedAt;
-  cb.disabled = !!task.archivedAt;
-  cb.addEventListener("change", () => toggleComplete(task.id));
-
-  const text = document.createElement("div");
-  text.className = "text";
-  text.tabIndex = 0;
-  text.setAttribute("role", "button");
-  text.setAttribute("aria-label", "Edit task");
-  text.textContent = task.text;
-  text.addEventListener("click", () => openEditDialog(task.id));
-  text.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") openEditDialog(task.id);
-  });
-
-  titleline.appendChild(cb);
-  titleline.appendChild(text);
-
-  head.appendChild(titleline);
-  left.appendChild(head);
-
-  const badges = document.createElement("div");
-  badges.className = "badges";
-
-  // priority badge
-  const pr = document.createElement("span");
-  pr.className = `badge ${task.priority}`;
-  pr.textContent = task.priority === "high" ? "High" : task.priority === "med" ? "Medium" : "Low";
-  badges.appendChild(pr);
-
-  // pinned
-  if (task.pinned) {
-    const pin = document.createElement("span");
-    pin.className = "badge";
-    pin.textContent = "Pinned";
-    badges.appendChild(pin);
-  }
-
-  // tags
-  (task.tags || []).slice(0, 6).forEach(tag => {
-    const b = document.createElement("span");
-    b.className = "badge";
-    b.textContent = `#${tag}`;
-    badges.appendChild(b);
-  });
-
-  // due
-  for (const b of dueBadges(task)) {
-    const x = document.createElement("span");
-    x.className = `badge ${b.cls || ""}`.trim();
-    x.textContent = b.text;
-    badges.appendChild(x);
-  }
-
-  // recurring
-  if (task.recurrence) {
-    const r = document.createElement("span");
-    r.className = "badge";
-    const rt = task.recurrence.type;
-    r.textContent = rt === "custom" ? `Repeats every ${task.recurrence.everyDays}d` : `Repeats ${rt}`;
-    badges.appendChild(r);
-  }
-
-  // subtasks summary
-  if (task.subtasks?.length) {
-    const done = task.subtasks.filter(s => s.done).length;
-    const st = document.createElement("span");
-    st.className = "badge";
-    st.textContent = `Subtasks ${done}/${task.subtasks.length}`;
-    badges.appendChild(st);
-  }
-
-  left.appendChild(badges);
-
-  if (task.notes) {
-    const notes = document.createElement("div");
-    notes.className = "notes";
-    notes.textContent = task.notes;
-    left.appendChild(notes);
-  }
-
-  const actions = document.createElement("div");
-  actions.className = "item-actions";
-
-  const pinBtn = document.createElement("button");
-  pinBtn.className = "iconbtn";
-  pinBtn.type = "button";
-  pinBtn.textContent = task.pinned ? "Unpin" : "Pin";
-  pinBtn.addEventListener("click", () => togglePinned(task.id));
-
-  const archBtn = document.createElement("button");
-  archBtn.className = "iconbtn";
-  archBtn.type = "button";
-  archBtn.textContent = task.archivedAt ? "Unarchive" : "Archive";
-  archBtn.addEventListener("click", () => toggleArchive(task.id));
-
-  const delBtn = document.createElement("button");
-  delBtn.className = "iconbtn";
-  delBtn.type = "button";
-  delBtn.textContent = "Delete";
-  delBtn.addEventListener("click", () => {
-    if (!confirmAction("Delete this task?")) return;
-    deleteTask(task.id);
-  });
-
-  actions.appendChild(pinBtn);
-  actions.appendChild(archBtn);
-  actions.appendChild(delBtn);
-
-  li.appendChild(left);
-  li.appendChild(actions);
-
-  return li;
-}
-
-function renderTasks() {
-  const tasks = state.tasks
-    .filter(passesFilters)
-    .sort(sortTasks);
-
-  els.taskList.innerHTML = "";
-  if (tasks.length === 0) {
-    els.emptyState.classList.remove("hidden");
-  } else {
-    els.emptyState.classList.add("hidden");
-    for (const t of tasks) els.taskList.appendChild(renderTaskItem(t));
-  }
-
-  const { remaining, pct } = calcProgress();
-  els.countText.textContent = `${remaining} remaining`;
-  els.progressBar.style.width = `${pct}%`;
-}
-
-/* ------------------ Export / Import ------------------ */
-function download(filename, text, mime="text/plain") {
+function download(filename, text, mime = "application/json") {
   const blob = new Blob([text], { type: mime });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -846,127 +616,176 @@ function download(filename, text, mime="text/plain") {
 
 function exportJSON() {
   const payload = {
-    schemaVersion: SCHEMA_VERSION,
-    exportedAt: nowISO(),
+    exportedAt: new Date().toISOString(),
     data: state
   };
-  download(`task-tracker-backup-${new Date().toISOString().slice(0,10)}.json`, JSON.stringify(payload, null, 2), "application/json");
+  download(`taskflow-backup-${new Date().toISOString().slice(0,10)}.json`, JSON.stringify(payload, null, 2));
+  showToast("Exported backup.");
 }
 
 function importJSON(file) {
   const reader = new FileReader();
   reader.onload = () => {
     try {
-      const payload = JSON.parse(reader.result);
-      const incoming = payload.data || payload;
-      state = migrateState(incoming);
+      const parsed = JSON.parse(reader.result);
+      const incoming = parsed.data || parsed;
+
+      if (!incoming || !Array.isArray(incoming.lists) || !Array.isArray(incoming.tasks)) {
+        throw new Error("bad");
+      }
+
+      state = {
+        theme: incoming.theme === "light" ? "light" : "dark",
+        activeListId: incoming.activeListId && incoming.lists.some(l => l.id === incoming.activeListId)
+          ? incoming.activeListId
+          : incoming.lists[0].id,
+        filter: "all",
+        sort: incoming.sort && ["newest","due","priority","alpha"].includes(incoming.sort) ? incoming.sort : "newest",
+        lists: incoming.lists,
+        tasks: incoming.tasks
+      };
+
       saveState();
       applyTheme();
+      els.sortSelect.value = state.sort;
+      setFilter("all");
       renderAll();
-      alert("Import complete.");
+      showToast("Import complete.");
     } catch {
-      alert("Import failed. Invalid JSON.");
+      alert("Import failed: invalid JSON file.");
     }
   };
   reader.readAsText(file);
 }
 
-function exportCSV() {
-  const headers = ["list","task","notes","priority","tags","dueAt","pinned","completedAt","archivedAt","subtasks"];
-  const lines = [headers.join(",")];
+/* ---------------- More menu (top right) ---------------- */
 
-  const listNameById = new Map(state.lists.map(l => [l.id, l.name]));
-  const esc = (v) => {
-    const s = (v ?? "").toString().replaceAll('"', '""');
-    return `"${s}"`;
-  };
-
-  for (const t of state.tasks) {
-    const row = [
-      listNameById.get(t.listId) || "",
-      t.text,
-      t.notes || "",
-      t.priority,
-      (t.tags || []).join(" "),
-      t.dueAt || "",
-      t.pinned ? "true" : "false",
-      t.completedAt || "",
-      t.archivedAt || "",
-      (t.subtasks || []).map(st => `${st.done ? "[x]" : "[ ]"} ${st.text}`).join(" | ")
-    ].map(esc).join(",");
-    lines.push(row);
-  }
-
-  download(`task-tracker-${new Date().toISOString().slice(0,10)}.csv`, lines.join("\n"), "text/csv");
+function toggleMoreMenu() {
+  els.moreMenu.classList.toggle("hidden");
 }
 
-/* ------------------ Misc UI wiring ------------------ */
-function renderAll() {
-  renderLists();
-  buildTagOptions();
-  renderTasks();
+function closeMoreMenu() {
+  els.moreMenu.classList.add("hidden");
 }
 
-function wireEvents() {
-  els.listSelect.addEventListener("change", () => setActiveList(els.listSelect.value));
-  els.newListBtn.addEventListener("click", createList);
-  els.renameListBtn.addEventListener("click", renameList);
-  els.deleteListBtn.addEventListener("click", deleteList);
+/* ---------------- Details panel ---------------- */
 
-  els.addTaskBtn.addEventListener("click", addTask);
-  els.taskText.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") addTask();
+function toggleDetails() {
+  const isOpen = !els.detailsPanel.classList.contains("hidden");
+  els.detailsPanel.classList.toggle("hidden", isOpen);
+  els.detailsBtn.setAttribute("aria-expanded", isOpen ? "false" : "true");
+}
+
+/* ---------------- Wiring ---------------- */
+
+function init() {
+  applyTheme();
+
+  // initial UI state
+  els.sortSelect.value = state.sort;
+  setFilter(state.filter);
+
+  renderAll();
+
+  // sidebar drawer
+  els.openSidebarBtn?.addEventListener("click", openSidebar);
+  els.closeSidebarBtn?.addEventListener("click", closeSidebar);
+  els.scrim.addEventListener("click", closeSidebar);
+
+  // lists
+  els.newListBtn.addEventListener("click", newList);
+
+  // tools
+  els.themeBtn.addEventListener("click", () => {
+    state.theme = state.theme === "light" ? "dark" : "light";
+    saveState();
+    applyTheme();
+    showToast("Theme updated.");
   });
 
-  els.repeatSelect.addEventListener("change", () => {
-    els.customRepeatWrap.classList.toggle("hidden", els.repeatSelect.value !== "custom");
-  });
-
-  // filters
-  ["searchInput","statusFilter","priorityFilter","tagFilter","dueFilter","sortSelect"].forEach(id => {
-    els[id].addEventListener("input", renderTasks);
-    els[id].addEventListener("change", renderTasks);
-  });
-
-  els.clearCompletedBtn.addEventListener("click", clearCompleted);
-  els.exportJsonBtn.addEventListener("click", exportJSON);
-  els.importJsonInput.addEventListener("change", (e) => {
+  els.exportBtn.addEventListener("click", exportJSON);
+  els.importInput.addEventListener("change", (e) => {
     const f = e.target.files?.[0];
     if (f) importJSON(f);
     e.target.value = "";
   });
-  els.exportCsvBtn.addEventListener("click", exportCSV);
-  els.resetBtn.addEventListener("click", resetAll);
 
-  els.themeBtn.addEventListener("click", toggleTheme);
-  els.printBtn.addEventListener("click", () => window.print());
-
-  // dialog events
-  els.editRepeat.addEventListener("change", () => {
-    els.editCustomRepeatWrap.classList.toggle("hidden", els.editRepeat.value !== "custom");
+  // composer
+  els.addBtn.addEventListener("click", addTask);
+  els.taskTitle.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") addTask();
   });
-  els.addSubtaskBtn.addEventListener("click", addSubtask);
-  els.subtaskText.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") addSubtask();
-  });
+  els.detailsBtn.addEventListener("click", toggleDetails);
 
-  els.taskForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    saveEditDialog();
-    els.taskDialog.close();
+  // filter segmented
+  els.segBtns.forEach(btn => btn.addEventListener("click", () => setFilter(btn.dataset.filter)));
+
+  // sort
+  els.sortSelect.addEventListener("change", () => {
+    state.sort = els.sortSelect.value;
+    saveState();
+    renderTasks();
   });
 
-  // ESC dialog close is native
+  // search
+  const syncClear = () => {
+    els.clearSearchBtn.classList.toggle("hidden", !els.searchInput.value.trim());
+  };
+  els.searchInput.addEventListener("input", () => {
+    syncClear();
+    renderTasks();
+  });
+  els.clearSearchBtn.addEventListener("click", () => {
+    els.searchInput.value = "";
+    syncClear();
+    renderTasks();
+    els.searchInput.focus();
+  });
+  syncClear();
+
+  // modal
+  els.closeModalBtn.addEventListener("click", closeEditModal);
+  els.cancelEditBtn.addEventListener("click", closeEditModal);
+  els.saveEditBtn.addEventListener("click", saveEdit);
+  els.deleteTaskBtn.addEventListener("click", deleteEditingTask);
+
+  els.modal.addEventListener("click", (e) => {
+    if (e.target === els.modal) closeEditModal();
+  });
+
+  // more menu
+  els.moreBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    toggleMoreMenu();
+  });
+  els.renameListBtn.addEventListener("click", () => {
+    closeMoreMenu();
+    renameActiveList();
+  });
+  els.deleteListBtn.addEventListener("click", () => {
+    closeMoreMenu();
+    deleteActiveList();
+  });
+
+  // global click: close popovers
+  document.addEventListener("click", () => {
+    closeTaskMenu();
+    closeMoreMenu();
+  });
+
+  // prevent click inside menus from closing immediately
+  els.moreMenu.addEventListener("click", (e) => e.stopPropagation());
+
+  // escape key
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      closeTaskMenu();
+      closeMoreMenu();
+      closeEditModal();
+      closeSidebar();
+      hideToast();
+    }
+  });
 }
 
-/* ------------------ PWA register ------------------ */
-function registerSW() {
-  if (!("serviceWorker" in navigator)) return;
-  navigator.serviceWorker.register("./sw.js").catch(() => {});
-}
-
-/* ------------------ Init ------------------ */
-applyTheme();
-wireEvents();
-renderAll();
-registerSW();
+init();
