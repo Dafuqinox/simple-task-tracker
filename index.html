@@ -5,15 +5,18 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="color-scheme" content="light dark" />
   <title>TaskFlow</title>
+
+  <!-- Favicon (SVG data URI) -->
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop stop-color='%236d5efc'/%3E%3Cstop offset='1' stop-color='%2322d3ee'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect x='6' y='6' width='52' height='52' rx='16' fill='url(%23g)'/%3E%3Ctext x='32' y='40' text-anchor='middle' font-family='system-ui,Segoe UI,Arial' font-size='22' font-weight='900' fill='white'%3ETF%3C/text%3E%3C/svg%3E" />
+
   <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
-  <!-- Mobile drawer backdrop -->
   <div id="scrim" class="scrim hidden" aria-hidden="true"></div>
 
   <div class="appShell">
-    <!-- Sidebar -->
     <aside id="sidebar" class="sidebar" aria-label="Sidebar">
       <div class="sideHeader">
         <div class="brand">
@@ -24,20 +27,25 @@
           </div>
         </div>
 
-        <button id="closeSidebarBtn" class="iconBtn onlyMobile" type="button" aria-label="Close sidebar">
-          ✕
-        </button>
+        <button id="closeSidebarBtn" class="iconBtn onlyMobile" type="button" aria-label="Close sidebar">✕</button>
       </div>
 
+      <!-- Lists -->
       <div class="sideSection">
         <div class="sideSectionRow">
           <div class="sideTitle">Lists</div>
-          <button id="newListBtn" class="ghostBtn" type="button">New</button>
+        </div>
+
+        <!-- Add List Section -->
+        <div class="addListRow" aria-label="Add a list">
+          <input id="newListName" class="input smallInput" type="text" placeholder="Add a list…" />
+          <button id="createListBtn" class="btn primary smallBtn" type="button">Add</button>
         </div>
 
         <div id="lists" class="lists" role="list"></div>
       </div>
 
+      <!-- Tools -->
       <div class="sideSection">
         <div class="sideTitle">Tools</div>
         <div class="toolRow">
@@ -51,7 +59,7 @@
             <span>Export</span>
           </button>
 
-          <label class="toolBtn fileBtn" role="button" tabindex="0">
+          <label class="toolBtn fileBtn" role="button" tabindex="0" aria-label="Import JSON backup">
             <span class="toolIcon" aria-hidden="true">⭱</span>
             <span>Import</span>
             <input id="importInput" type="file" accept="application/json" />
@@ -64,9 +72,7 @@
       </div>
     </aside>
 
-    <!-- Main -->
     <main class="main" aria-label="Main content">
-      <!-- Topbar -->
       <header class="topbar">
         <div class="topLeft">
           <button id="openSidebarBtn" class="iconBtn onlyMobile" type="button" aria-label="Open sidebar">☰</button>
@@ -84,9 +90,7 @@
             <button id="clearSearchBtn" class="clearSearch hidden" type="button" aria-label="Clear search">✕</button>
           </div>
 
-          <button id="moreBtn" class="iconBtn onlyDesktop" type="button" aria-label="More">
-            ⋯
-          </button>
+          <button id="moreBtn" class="iconBtn onlyDesktop" type="button" aria-label="More">⋯</button>
 
           <div id="moreMenu" class="menu hidden" role="menu" aria-label="More menu">
             <button id="renameListBtn" class="menuItem" role="menuitem" type="button">Rename list</button>
@@ -95,7 +99,6 @@
         </div>
       </header>
 
-      <!-- Composer -->
       <section class="composer" aria-label="Add task">
         <div class="composerRow">
           <div class="composerMain">
@@ -118,23 +121,18 @@
           <div class="spacer"></div>
 
           <label class="smallLabel" for="sortSelect">Sort</label>
-          <select id="sortSelect" class="select">
-            <option value="newest" selected>Newest</option>
-            <option value="due">Due date</option>
-            <option value="priority">Priority</option>
-            <option value="alpha">A → Z</option>
-          </select>
+          <select id="sortSelect" class="select" aria-label="Sort tasks"></select>
         </div>
 
         <div id="detailsPanel" class="details hidden" aria-label="Task details">
           <div class="grid">
             <div class="field">
-              <label>Due date</label>
+              <label for="taskDue">Due date</label>
               <input id="taskDue" class="input" type="date" />
             </div>
 
             <div class="field">
-              <label>Priority</label>
+              <label for="taskPriority">Priority</label>
               <select id="taskPriority" class="select">
                 <option value="low">Low</option>
                 <option value="med" selected>Medium</option>
@@ -143,14 +141,13 @@
             </div>
 
             <div class="field span2">
-              <label>Tags</label>
+              <label for="taskTags">Tags</label>
               <input id="taskTags" class="input" type="text" placeholder="Comma separated (e.g., school, bills)" />
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Content -->
       <section class="content" aria-label="Tasks">
         <div id="emptyState" class="empty hidden">
           <div class="emptyTitle">Nothing here yet</div>
@@ -164,7 +161,7 @@
 
   <!-- Edit Modal -->
   <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Edit task">
-    <div class="modalCard">
+    <div class="modalCard" role="document">
       <div class="modalHead">
         <div class="modalTitle">Edit task</div>
         <button id="closeModalBtn" class="iconBtn" type="button" aria-label="Close">✕</button>
@@ -172,18 +169,18 @@
 
       <div class="modalBody">
         <div class="field">
-          <label>Title</label>
+          <label for="editTitle">Title</label>
           <input id="editTitle" class="input" type="text" />
         </div>
 
         <div class="grid">
           <div class="field">
-            <label>Due date</label>
+            <label for="editDue">Due date</label>
             <input id="editDue" class="input" type="date" />
           </div>
 
           <div class="field">
-            <label>Priority</label>
+            <label for="editPriority">Priority</label>
             <select id="editPriority" class="select">
               <option value="low">Low</option>
               <option value="med">Medium</option>
@@ -192,7 +189,7 @@
           </div>
 
           <div class="field span2">
-            <label>Tags</label>
+            <label for="editTags">Tags</label>
             <input id="editTags" class="input" type="text" placeholder="Comma separated" />
           </div>
         </div>
@@ -203,6 +200,32 @@
         <div class="spacer"></div>
         <button id="cancelEditBtn" class="btn" type="button">Cancel</button>
         <button id="saveEditBtn" class="btn primary" type="button">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dialog (replaces prompt/confirm/alert) -->
+  <div id="dialog" class="modal hidden" role="dialog" aria-modal="true" aria-label="Dialog">
+    <div class="modalCard" role="document">
+      <div class="modalHead">
+        <div id="dialogTitle" class="modalTitle">Dialog</div>
+        <button id="dialogCloseBtn" class="iconBtn" type="button" aria-label="Close">✕</button>
+      </div>
+
+      <div class="modalBody">
+        <div id="dialogMsg" class="dialogMsg">Message</div>
+
+        <div id="dialogInputWrap" class="field hidden">
+          <label id="dialogInputLabel" for="dialogInput">Name</label>
+          <input id="dialogInput" class="input" type="text" />
+          <div id="dialogHint" class="dialogHint"></div>
+        </div>
+      </div>
+
+      <div class="modalActions">
+        <button id="dialogCancelBtn" class="btn" type="button">Cancel</button>
+        <div class="spacer"></div>
+        <button id="dialogOkBtn" class="btn primary" type="button">OK</button>
       </div>
     </div>
   </div>

@@ -1,46 +1,61 @@
-/* TaskFlow — Professional SaaS UI (mobile-first)
-   No external libs. Consistent spacing, typography, components.
-*/
-
 :root{
   --bg: #0b1220;
-  --panel: rgba(255,255,255,0.06);
-  --panel2: rgba(255,255,255,0.09);
-  --border: rgba(255,255,255,0.12);
 
-  --text: #e9eefc;
-  --muted: rgba(233,238,252,0.65);
+  --panel: rgba(255,255,255,0.08);
+  --panel2: rgba(255,255,255,0.12);
+  --panel3: rgba(255,255,255,0.16);
 
-  --accent: #6d5efc;  /* indigo */
-  --accent2:#22d3ee;  /* cyan */
+  --border: rgba(255,255,255,0.18);
+
+  --text: #eef2ff;
+  --muted: rgba(238,242,255,0.78);
+
+  --accent: #6d5efc;
+  --accent2:#22d3ee;
+
   --danger: #fb7185;
+  --warn: #fbbf24;
+  --good: #34d399;
 
   --shadow: 0 18px 55px rgba(0,0,0,0.55);
   --shadow2: 0 12px 28px rgba(0,0,0,0.45);
 
   --r: 16px;
-  --r2: 12px;
+  --focus: 0 0 0 4px rgba(109,94,252,0.35);
 
-  --focus: 0 0 0 4px rgba(109,94,252,0.25);
+  --statusAlpha: 12%;
+
+  /* ensures selects/options obey readable palette */
+  color-scheme: dark;
 }
 
 [data-theme="light"]{
   --bg: #f6f7fb;
+
   --panel: rgba(15,23,42,0.05);
   --panel2: rgba(15,23,42,0.08);
-  --border: rgba(15,23,42,0.10);
+  --panel3: rgba(15,23,42,0.10);
+
+  --border: rgba(15,23,42,0.12);
 
   --text: #0f172a;
-  --muted: rgba(15,23,42,0.58);
+  --muted: rgba(15,23,42,0.62);
 
   --accent: #4f46e5;
   --accent2:#06b6d4;
+
   --danger: #ef4444;
+  --warn: #f59e0b;
+  --good: #10b981;
 
   --shadow: 0 18px 55px rgba(2,6,23,0.12);
   --shadow2: 0 12px 28px rgba(2,6,23,0.10);
 
-  --focus: 0 0 0 4px rgba(79,70,229,0.18);
+  --focus: 0 0 0 4px rgba(79,70,229,0.22);
+
+  --statusAlpha: 10%;
+
+  color-scheme: light;
 }
 
 *{ box-sizing:border-box; }
@@ -50,12 +65,19 @@ body{
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   color: var(--text);
   background:
-    radial-gradient(1200px 700px at 20% -10%, rgba(109,94,252,0.22), transparent 55%),
-    radial-gradient(900px 600px at 95% 10%, rgba(34,211,238,0.16), transparent 50%),
+    radial-gradient(1200px 700px at 20% -10%, rgba(109,94,252,0.18), transparent 55%),
+    radial-gradient(900px 600px at 95% 10%, rgba(34,211,238,0.14), transparent 50%),
     var(--bg);
 }
 
-/* -------- Layout -------- */
+:focus-visible{
+  outline: none;
+  box-shadow: var(--focus);
+  border-color: color-mix(in oklab, var(--accent) 40%, var(--border));
+}
+
+button, input, select, label[role="button"]{ min-height: 44px; }
+
 .appShell{
   height: 100vh;
   display: grid;
@@ -79,7 +101,6 @@ body{
   min-width: 0;
 }
 
-/* -------- Sidebar -------- */
 .sideHeader{
   display:flex;
   align-items:center;
@@ -98,50 +119,28 @@ body{
   background: linear-gradient(135deg, var(--accent), var(--accent2));
   color: white;
   font-weight: 900;
-  letter-spacing: -0.03em;
 }
-.brandName{
-  font-weight: 900;
-  letter-spacing: -0.02em;
-}
-.brandSub{
-  font-size: 12px;
-  color: var(--muted);
-  margin-top: 2px;
-}
+.brandName{ font-weight: 900; letter-spacing: -0.02em; }
+.brandSub{ font-size: 12px; color: var(--muted); margin-top: 2px; }
 
-.sideSection{
-  display:flex;
-  flex-direction:column;
-  gap: 10px;
-}
-.sideSectionRow{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap: 10px;
-}
+.sideSection{ display:flex; flex-direction:column; gap: 10px; }
+.sideSectionRow{ display:flex; align-items:center; justify-content:space-between; gap: 10px; }
 .sideTitle{
   font-size: 12px;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
-.ghostBtn{
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text);
-  border-radius: 999px;
-  padding: 8px 10px;
-  cursor:pointer;
-}
-.ghostBtn:hover{ opacity: .92; }
 
-.lists{
+.addListRow{
   display:flex;
-  flex-direction:column;
-  gap: 8px;
+  gap: 10px;
+  align-items:center;
 }
+.smallInput{ min-height: 44px; }
+.smallBtn{ padding: 10px 12px; border-radius: 12px; }
+
+.lists{ display:flex; flex-direction:column; gap: 8px; }
 .listItem{
   display:flex;
   align-items:center;
@@ -149,7 +148,7 @@ body{
   gap: 10px;
   padding: 12px;
   border-radius: var(--r);
-  border: 1px solid transparent;
+  border: 1px solid var(--border);
   background: var(--panel);
   cursor:pointer;
   transition: transform .12s ease, background .12s ease, border-color .12s ease;
@@ -157,24 +156,26 @@ body{
 .listItem:hover{
   transform: translateY(-1px);
   background: var(--panel2);
-  border-color: color-mix(in oklab, var(--accent) 22%, var(--border));
+  border-color: color-mix(in oklab, var(--accent) 28%, var(--border));
 }
 .listItem.active{
   background: linear-gradient(180deg, var(--panel2), var(--panel));
-  border-color: color-mix(in oklab, var(--accent) 40%, var(--border));
+  border-color: color-mix(in oklab, var(--accent) 44%, var(--border));
 }
-.listName{ font-weight: 800; letter-spacing: -0.01em; }
+.listName{ font-weight: 850; letter-spacing: -0.01em; }
+.listMeta{
+  display:flex;
+  gap: 8px;
+  align-items:center;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+}
 .listCount{ font-size: 12px; color: var(--muted); }
 
-/* tools */
-.toolRow{
-  display:flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
+.toolRow{ display:flex; gap: 10px; flex-wrap: wrap; }
 .toolBtn{
   flex:1;
-  min-width: 110px;
+  min-width: 120px;
   display:flex;
   align-items:center;
   gap: 10px;
@@ -185,27 +186,19 @@ body{
   padding: 10px 12px;
   cursor:pointer;
 }
-.toolBtn:hover{ opacity: .94; }
-.toolIcon{ opacity: .9; }
+.toolBtn:hover{ background: var(--panel2); }
+.toolIcon{ opacity: .95; }
+
 .fileBtn{ position:relative; overflow:hidden; }
-.fileBtn input{
-  position:absolute;
-  inset:0;
-  opacity:0;
-  cursor:pointer;
-}
+.fileBtn input{ position:absolute; inset:0; opacity:0; cursor:pointer; }
 
 .sideFooter{
   margin-top:auto;
   border-top: 1px solid var(--border);
   padding-top: 12px;
 }
-.sideHint{
-  font-size: 12px;
-  color: var(--muted);
-}
+.sideHint{ font-size: 12px; color: var(--muted); }
 
-/* -------- Topbar -------- */
 .topbar{
   display:flex;
   align-items:center;
@@ -213,85 +206,73 @@ body{
   gap: 12px;
 }
 
-.topLeft{
-  display:flex;
-  align-items:center;
-  gap: 10px;
-  min-width: 0;
-}
-
+.topLeft{ display:flex; align-items:center; gap: 10px; min-width: 0; }
 .titleBlock{ min-width: 0; }
 .pageTitle{
   font-size: 20px;
-  font-weight: 900;
+  font-weight: 950;
   letter-spacing: -0.03em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.pageSub{
-  margin-top: 4px;
-  font-size: 13px;
-  color: var(--muted);
-}
+.pageSub{ margin-top: 4px; font-size: 13px; color: var(--muted); }
 
-.topRight{
-  display:flex;
-  align-items:center;
-  gap: 10px;
-}
+.topRight{ display:flex; align-items:center; gap: 10px; position: relative; }
 
 .searchWrap{
   position: relative;
-  width: min(520px, 44vw);
-  min-width: 220px;
+  width: min(560px, 46vw);
+  min-width: 240px;
 }
 .searchIcon{
   position:absolute;
   left: 12px; top: 50%;
   transform: translateY(-50%);
-  opacity: .75;
+  opacity: .90;
   pointer-events:none;
 }
 .searchInput{
   width:100%;
-  padding: 12px 38px 12px 34px;
+  padding: 12px 40px 12px 34px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--panel);
   color: var(--text);
   outline:none;
 }
-.searchInput:focus{ box-shadow: var(--focus); }
 .clearSearch{
   position:absolute;
   right: 8px; top: 50%;
   transform: translateY(-50%);
-  border: none;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--text);
-  opacity: .75;
+  opacity: .85;
   cursor:pointer;
+  border-radius: 10px;
+  width: 36px; height: 36px;
+  display:grid; place-items:center;
 }
-.clearSearch:hover{ opacity: 1; }
+.clearSearch:hover{ background: var(--panel2); opacity: 1; }
 
-/* More menu */
 .menu{
   position:absolute;
-  top: 62px;
-  right: 18px;
-  width: 220px;
+  top: 54px;
+  right: 0;
+  width: 240px;
   border-radius: var(--r);
   border: 1px solid var(--border);
-  background: linear-gradient(180deg, var(--panel2), var(--panel));
+  background: color-mix(in oklab, var(--bg) 70%, var(--panel3));
   box-shadow: var(--shadow2);
   padding: 6px;
   z-index: 40;
+  backdrop-filter: blur(10px);
 }
 .menuItem{
   width:100%;
   text-align:left;
-  padding: 10px 10px;
+  padding: 12px 10px;
   border-radius: 12px;
   border: 1px solid transparent;
   background: transparent;
@@ -300,11 +281,10 @@ body{
 }
 .menuItem:hover{
   background: var(--panel2);
-  border-color: color-mix(in oklab, var(--accent) 20%, var(--border));
+  border-color: color-mix(in oklab, var(--accent) 24%, var(--border));
 }
 .menuItem.danger{ color: var(--danger); }
 
-/* -------- Composer -------- */
 .composer{
   border: 1px solid var(--border);
   border-radius: var(--r);
@@ -313,12 +293,7 @@ body{
   padding: 12px;
 }
 
-.composerRow{
-  display:flex;
-  gap: 10px;
-  align-items:center;
-}
-
+.composerRow{ display:flex; gap: 10px; align-items:center; }
 .composerMain{ flex:1; min-width: 0; }
 
 .composerBar{
@@ -328,7 +303,6 @@ body{
   gap: 10px;
   flex-wrap: wrap;
 }
-
 .spacer{ flex:1; }
 
 .pillBtn{
@@ -342,13 +316,10 @@ body{
   align-items:center;
   gap: 8px;
 }
-.pillBtn:hover{ opacity:.94; }
-.chev{ opacity: .8; }
+.pillBtn:hover{ background: var(--panel2); }
+.chev{ opacity: .9; }
 
-.smallLabel{
-  font-size: 12px;
-  color: var(--muted);
-}
+.smallLabel{ font-size: 12px; color: var(--muted); }
 
 .segmented{
   display:flex;
@@ -363,7 +334,7 @@ body{
   color: var(--text);
   padding: 10px 12px;
   cursor:pointer;
-  font-weight: 800;
+  font-weight: 900;
 }
 .segBtn:hover{ background: var(--panel2); }
 .segBtn.active{
@@ -371,28 +342,16 @@ body{
   color: white;
 }
 
-/* details */
 .details{
   margin-top: 10px;
   border-top: 1px solid var(--border);
   padding-top: 10px;
 }
-.grid{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-.span2{ grid-column: 1 / -1; }
 
-.field{
-  display:flex;
-  flex-direction:column;
-  gap: 6px;
-}
-label{
-  font-size: 12px;
-  color: var(--muted);
-}
+.grid{ display:grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.span2{ grid-column: 1 / -1; }
+.field{ display:flex; flex-direction:column; gap: 6px; }
+label{ font-size: 12px; color: var(--muted); }
 
 .input, .select{
   width:100%;
@@ -402,10 +361,21 @@ label{
   background: var(--panel);
   color: var(--text);
   outline:none;
-}
-.input:focus, .select:focus{ box-shadow: var(--focus); }
 
-/* -------- Buttons -------- */
+  /* helps browser draw readable dropdowns */
+  color-scheme: light dark;
+}
+
+.input::placeholder{
+  color: color-mix(in oklab, var(--muted) 70%, transparent);
+}
+
+/* IMPORTANT: fix unreadable dropdown list on dark mode */
+select.select option{
+  background: color-mix(in oklab, var(--bg) 82%, var(--panel3));
+  color: var(--text);
+}
+
 .btn{
   border: 1px solid var(--border);
   background: var(--panel);
@@ -413,22 +383,26 @@ label{
   padding: 11px 12px;
   border-radius: 12px;
   cursor:pointer;
-  font-weight: 850;
+  font-weight: 900;
 }
-.btn:hover{ opacity: .94; }
+.btn:hover{ background: var(--panel2); }
+
 .primary{
   border-color: transparent;
   background: linear-gradient(135deg, var(--accent), color-mix(in oklab, var(--accent2) 35%, var(--accent)));
   color: white;
 }
-.danger{
-  color: var(--danger);
-  border-color: color-mix(in oklab, var(--danger) 35%, var(--border));
+
+.btn.danger{
+  color: white;
+  border-color: transparent;
+  background: color-mix(in oklab, var(--danger) 70%, var(--bg));
 }
+.btn.danger:hover{ background: color-mix(in oklab, var(--danger) 78%, var(--bg)); }
 
 .iconBtn{
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--panel);
@@ -437,15 +411,18 @@ label{
   display:grid;
   place-items:center;
 }
-.iconBtn:hover{ opacity:.94; }
+.iconBtn:hover{ background: var(--panel2); }
 
-/* -------- Content & tasks -------- */
 .content{
   border: 1px solid var(--border);
   border-radius: var(--r);
   background: linear-gradient(180deg, var(--panel2), transparent);
   box-shadow: var(--shadow2);
   padding: 10px;
+
+  /* FIX: ensure list never hides behind toast/footer */
+  padding-bottom: 120px;
+
   overflow:auto;
   min-height: 0;
 }
@@ -459,7 +436,7 @@ label{
 }
 
 .taskRow{
-  border: 1px solid transparent;
+  border: 1px solid var(--border);
   border-radius: var(--r);
   background: var(--panel);
   padding: 12px;
@@ -468,28 +445,49 @@ label{
   justify-content:space-between;
   gap: 12px;
   transition: transform .12s ease, background .12s ease, border-color .12s ease;
+  position: relative;
 }
+.taskRow::before{
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 10px;
+  bottom: 10px;
+  width: 4px;
+  border-radius: 999px;
+  background: transparent;
+  opacity: 0.95;
+}
+
+.taskRow.newTask{
+  background: color-mix(in oklab, var(--accent2) var(--statusAlpha), var(--panel));
+  border-color: color-mix(in oklab, var(--accent2) 35%, var(--border));
+}
+.taskRow.newTask::before{ background: var(--accent2); }
+
+.taskRow.dueSoon{
+  background: color-mix(in oklab, var(--warn) var(--statusAlpha), var(--panel));
+  border-color: color-mix(in oklab, var(--warn) 40%, var(--border));
+}
+.taskRow.dueSoon::before{ background: var(--warn); }
+
+.taskRow.overdueTask{
+  background: color-mix(in oklab, var(--danger) var(--statusAlpha), var(--panel));
+  border-color: color-mix(in oklab, var(--danger) 45%, var(--border));
+}
+.taskRow.overdueTask::before{ background: var(--danger); }
+
 .taskRow:hover{
   transform: translateY(-1px);
   background: var(--panel2);
-  border-color: color-mix(in oklab, var(--accent) 18%, var(--border));
+  border-color: color-mix(in oklab, var(--accent) 22%, var(--border));
 }
 
-.taskLeft{
-  display:flex;
-  gap: 10px;
-  flex:1;
-  min-width:0;
-}
-.chk{
-  width: 18px;
-  height: 18px;
-  margin-top: 3px;
-  accent-color: var(--accent);
-}
+.taskLeft{ display:flex; gap: 10px; flex:1; min-width:0; }
+.chk{ width: 20px; height: 20px; margin-top: 3px; accent-color: var(--accent); }
 
 .taskTitle{
-  font-weight: 900;
+  font-weight: 950;
   letter-spacing: -0.02em;
   line-height: 1.25;
   word-break: break-word;
@@ -498,7 +496,7 @@ label{
 .taskTitle.completed{
   text-decoration: line-through;
   color: var(--muted);
-  font-weight: 800;
+  font-weight: 900;
 }
 
 .taskMeta{
@@ -510,41 +508,61 @@ label{
   color: var(--muted);
   font-size: 12px;
 }
+
 .badge{
   padding: 6px 10px;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: rgba(0,0,0,0.06);
+  background: var(--panel2);
+  color: var(--text);
 }
-[data-theme="light"] .badge{ background: rgba(15,23,42,0.04); }
 
-.badge.high{ color: var(--danger); border-color: color-mix(in oklab, var(--danger) 40%, var(--border)); }
-.badge.med{ color: #f59e0b; border-color: color-mix(in oklab, #f59e0b 35%, var(--border)); }
-.badge.low{ color: #10b981; border-color: color-mix(in oklab, #10b981 35%, var(--border)); }
-.badge.overdue{ color: var(--danger); border-color: color-mix(in oklab, var(--danger) 40%, var(--border)); }
-
-.taskActions{
-  display:flex;
-  gap: 8px;
+.badge.high{
+  border-color: color-mix(in oklab, var(--danger) 50%, var(--border));
+  color: var(--danger);
+  background: color-mix(in oklab, var(--danger) 10%, var(--panel2));
 }
+.badge.med{
+  border-color: color-mix(in oklab, var(--warn) 45%, var(--border));
+  color: var(--warn);
+  background: color-mix(in oklab, var(--warn) 10%, var(--panel2));
+}
+.badge.low{
+  border-color: color-mix(in oklab, var(--good) 40%, var(--border));
+  color: var(--good);
+  background: color-mix(in oklab, var(--good) 10%, var(--panel2));
+}
+
+.badge.overdue{
+  border-color: color-mix(in oklab, var(--danger) 55%, var(--border));
+  color: var(--danger);
+  background: color-mix(in oklab, var(--danger) 12%, var(--panel2));
+}
+.badge.soon{
+  border-color: color-mix(in oklab, var(--warn) 55%, var(--border));
+  color: var(--warn);
+  background: color-mix(in oklab, var(--warn) 12%, var(--panel2));
+}
+.badge.new{
+  border-color: color-mix(in oklab, var(--accent2) 55%, var(--border));
+  color: var(--accent2);
+  background: color-mix(in oklab, var(--accent2) 12%, var(--panel2));
+}
+
+.taskActions{ display:flex; gap: 8px; }
 
 .kebab{
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: transparent;
+  background: var(--panel);
   color: var(--text);
   cursor:pointer;
 }
 .kebab:hover{ background: var(--panel2); }
 
-/* -------- Empty -------- */
-.empty{
-  padding: 28px 14px;
-  text-align:center;
-  color: var(--muted);
-}
+.empty{ padding: 28px 14px; text-align:center; color: var(--muted); }
 .emptyTitle{
   color: var(--text);
   font-weight: 950;
@@ -553,11 +571,10 @@ label{
 }
 .emptySub{ margin-top: 6px; }
 
-/* -------- Modal -------- */
 .modal{
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.55);
+  background: rgba(0,0,0,0.72);
   display:grid;
   place-items:center;
   padding: 14px;
@@ -567,30 +584,19 @@ label{
   width: min(720px, 96vw);
   border-radius: 18px;
   border: 1px solid var(--border);
-  background: linear-gradient(180deg, var(--panel2), var(--panel));
+  background: color-mix(in oklab, var(--bg) 62%, var(--panel3));
   box-shadow: var(--shadow);
   padding: 12px;
+  backdrop-filter: blur(12px);
 }
-.modalHead{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap: 10px;
-  padding: 4px 2px 10px;
-}
-.modalTitle{
-  font-weight: 950;
-  letter-spacing: -0.02em;
-}
+.modalHead{ display:flex; justify-content:space-between; align-items:center; gap: 10px; padding: 4px 2px 10px; }
+.modalTitle{ font-weight: 950; letter-spacing: -0.02em; }
 .modalBody{ padding: 4px 2px; }
-.modalActions{
-  display:flex;
-  gap: 10px;
-  align-items:center;
-  padding-top: 10px;
-}
+.modalActions{ display:flex; gap: 10px; align-items:center; padding-top: 10px; }
 
-/* -------- Toast -------- */
+.dialogMsg{ margin: 0 0 10px 0; color: var(--text); font-weight: 800; line-height: 1.4; }
+.dialogHint{ margin-top: 6px; color: var(--muted); font-size: 13px; }
+
 .toast{
   position: fixed;
   left: 12px;
@@ -600,7 +606,7 @@ label{
   margin: 0 auto;
   border-radius: 14px;
   border: 1px solid var(--border);
-  background: linear-gradient(180deg, var(--panel2), var(--panel));
+  background: color-mix(in oklab, var(--bg) 70%, var(--panel3));
   box-shadow: var(--shadow2);
   padding: 12px;
   display:flex;
@@ -608,24 +614,24 @@ label{
   justify-content:space-between;
   gap: 10px;
   z-index: 70;
+  backdrop-filter: blur(10px);
 }
-.toastMsg{ color: var(--text); font-weight: 800; }
+.toastMsg{ color: var(--text); font-weight: 900; }
 .toastActions{ display:flex; gap: 10px; }
 .toastBtn{
   border: 1px solid var(--border);
-  background: transparent;
+  background: var(--panel);
   color: var(--text);
   border-radius: 999px;
   padding: 8px 10px;
   cursor:pointer;
 }
-.toastBtn:hover{ opacity: .92; }
+.toastBtn:hover{ background: var(--panel2); }
 
-/* -------- Mobile drawer -------- */
 .scrim{
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.55);
+  background: rgba(0,0,0,0.72);
   z-index: 50;
 }
 
@@ -647,11 +653,7 @@ label{
   .sidebar.open{ transform: translateX(0%); }
   .onlyMobile{ display:inline-grid; }
   .onlyDesktop{ display:none; }
-
-  .searchWrap{
-    width: min(520px, 48vw);
-    min-width: 160px;
-  }
+  .searchWrap{ width: min(560px, 55vw); min-width: 170px; }
 }
 
 @media (max-width: 520px){
